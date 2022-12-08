@@ -4,7 +4,7 @@ services:
   curly:
     image: $DOCKER_LOGIN/$PROJECT:$DRONE_COMMIT
     environment:
-      - TOKEN: $DISCORD_TOKEN
+      - TOKEN: "$DISCORD_TOKEN"
       - TZ: "Europe/Moscow"
     restart: unless-stopped
     logging:
