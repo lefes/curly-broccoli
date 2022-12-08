@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  curly:
+    image: $DOCKER_LOGIN/$PROJECT:$DRONE_COMMIT
+    environment:
+      - TOKEN: $DISCORD_TOKEN
+      - TZ: "Europe/Moscow"
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "5"   # number of files or file count
+        max-size: "10m" # file size
