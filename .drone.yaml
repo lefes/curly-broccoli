@@ -15,8 +15,6 @@ steps:
         from_secret: DOCKER_TOKEN
       DOCKER_LOGIN:
         from_secret: DOCKER_LOGIN
-      DISCORD_TOKEN:
-        from_secret: DISCORD_TOKEN
     image: docker:dind
     volumes:
       - name: dockersock
@@ -43,6 +41,8 @@ steps:
         from_secret: SSH_KEY
       DOCKER_LOGIN:
         from_secret: DOCKER_LOGIN
+      DISCORD_TOKEN:
+        from_secret: DISCORD_TOKEN
     image: alpine:3
     depends_on:
       - build app
