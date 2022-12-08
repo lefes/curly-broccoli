@@ -50,7 +50,7 @@ steps:
       - apk add openssh gettext
       - envsubst < docker-compose.yaml.example > docker-compose.yaml
       - envsubst < deploy.sh.example > deploy.sh
-      - scp -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key docker-compose.yaml deployer@$DEPLOY_SERVER:/srv/solidtools
+      - scp -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key docker-compose.yaml deployer@$DEPLOY_SERVER:/srv/curly-broccoli/docker-compose.yaml
       - ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key deployer@$DEPLOY_SERVER 'bash -s' < deploy.sh
     event: push 
       # branch: [main, init]
