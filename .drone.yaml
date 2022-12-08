@@ -29,8 +29,7 @@ steps:
         .
       - docker push $DOCKER_LOGIN/$PROJECT:$DRONE_COMMIT
       - docker push $DOCKER_LOGIN/$PROJECT:latest
-    when:
-      event: push 
+    event: push 
       # branch: [main, init]
 
   - name: deploy
@@ -53,8 +52,7 @@ steps:
       - envsubst < deploy.sh.example > deploy.sh
       - scp -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key docker-compose.yaml deployer@$DEPLOY_SERVER:/srv/solidtools
       - ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key deployer@$DEPLOY_SERVER 'bash -s' < deploy.sh
-    when:
-      event: push 
+    event: push 
       # branch: [main, init]
 
   - name: Send Continuous Integration(CI) result to Telegram
