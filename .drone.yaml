@@ -31,7 +31,7 @@ steps:
       - docker push $DOCKER_LOGIN/$PROJECT:latest
     when:
       event: push 
-      branch: [main, init]
+      # branch: [main, init]
 
   - name: deploy
     environment:
@@ -53,12 +53,11 @@ steps:
       - ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key deployer@$DEPLOY_SERVER 'bash -s' < deploy.sh
     when:
       event: push 
-      branch: [main, init]
+      # branch: [main, init]
 
   - name: Send Continuous Integration(CI) result to Telegram
     event:
       - push
-      - pull_request
     when:
       status:
         - success
