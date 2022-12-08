@@ -41,6 +41,8 @@ steps:
         from_secret: DEPLOY_SERVER
       SSH_DEPLOY_KEY:
         from_secret: SSH_KEY
+      DOCKER_LOGIN:
+        from_secret: DOCKER_LOGIN
     image: alpine:3
     depends_on:
       - build app
