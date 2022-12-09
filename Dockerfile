@@ -1,7 +1,7 @@
 FROM golang:1.19 as build
 
 WORKDIR /go/src/app
-COPY main.go main_test.go go.sum go.mod ./
+COPY main.go go.sum go.mod ./
 
 RUN go mod download
 RUN go vet -v
