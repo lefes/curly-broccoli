@@ -26,7 +26,7 @@ steps:
         --file Dockerfile
         --tag $DOCKER_LOGIN/$PROJECT:$DRONE_COMMIT
         --tag $DOCKER_LOGIN/$PROJECT:latest
-        .
+        ..
       - docker push $DOCKER_LOGIN/$PROJECT:$DRONE_COMMIT
       - docker push $DOCKER_LOGIN/$PROJECT:latest
     event: push 
@@ -47,6 +47,7 @@ steps:
     depends_on:
       - build app
     commands:
+      - cd deploy
       - mkdir ~/.ssh
       - echo "$SSH_DEPLOY_KEY" > ~/.ssh/deploy_key
       - chmod 600 ~/.ssh/deploy_key
