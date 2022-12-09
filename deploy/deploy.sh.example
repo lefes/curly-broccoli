@@ -1,0 +1,20 @@
+#! /bin/bash
+
+# old_container_id=$(docker ps -f name=$SERVICE_NAME -q | tail -n1)
+
+cd /srv/curly-broccoli
+
+docker-compose pull
+docker-compose up -d 
+# docker-compose up -d --no-deps --scale $SERVICE_NAME=2 --no-recreate $SERVICE_NAME
+
+# wait for new container to be available  
+# new_container_id=$(docker ps -f name=$SERVICE_NAME -q | head -n1)
+# new_container_ip=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $new_container_id)
+# curl --silent --include --retry-connrefused --retry 30 --retry-delay 1 --fail http://$new_container_ip:8000/live/ || exit 1
+
+# take the old container offline  
+# docker stop $old_container_id
+# docker rm $old_container_id
+
+# docker-compose up -d --no-deps --scale $SERVICE_NAME=1 --no-recreate $SERVICE_NAME

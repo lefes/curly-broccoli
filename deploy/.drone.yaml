@@ -1,0 +1,98 @@
+kind: pipeline
+type: docker
+name: Main pipeline for Curly-Broccoli project
+
+clone:
+  depth: 100
+
+  skip_verify: False
+
+steps:
+  - name: build app
+    environment:
+      PROJECT: curly-broccoli
+      DOCKER_TOKEN:
+        from_secret: DOCKER_TOKEN
+      DOCKER_LOGIN:
+        from_secret: DOCKER_LOGIN
+    image: docker:dind
+    volumes:
+      - name: dockersock
+        path: /var/run/docker.sock
+    commands:
+      - docker login -u "$DOCKER_LOGIN" -p "$DOCKER_TOKEN" 
+      - DOCKER_BUILDKIT=1 
+        docker build 
+        --file Dockerfile
+        --tag $DOCKER_LOGIN/$PROJECT:$DRONE_COMMIT
+        --tag $DOCKER_LOGIN/$PROJECT:latest
+        .
+      - docker push $DOCKER_LOGIN/$PROJECT:$DRONE_COMMIT
+      - docker push $DOCKER_LOGIN/$PROJECT:latest
+    event: push 
+      # branch: [main, init]
+
+  - name: deploy
+    environment:
+      PROJECT: curly-broccoli
+      DEPLOY_SERVER:
+        from_secret: DEPLOY_SERVER
+      SSH_DEPLOY_KEY:
+        from_secret: SSH_KEY
+      DOCKER_LOGIN:
+        from_secret: DOCKER_LOGIN
+      DISCORD_TOKEN:
+        from_secret: DISCORD_TOKEN
+    image: alpine:3
+    depends_on:
+      - build app
+    commands:
+      - cd deploy
+      - mkdir ~/.ssh
+      - echo "$SSH_DEPLOY_KEY" > ~/.ssh/deploy_key
+      - chmod 600 ~/.ssh/deploy_key
+      - apk update
+      - apk add openssh gettext
+      - envsubst < docker-compose.yaml.example > docker-compose.yaml
+      - envsubst < deploy.sh.example > deploy.sh
+      - scp -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key docker-compose.yaml deployer@$DEPLOY_SERVER:/srv/curly-broccoli/docker-compose.yaml
+      - ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key deployer@$DEPLOY_SERVER 'bash -s' < deploy.sh
+    event: push 
+      # branch: [main, init]
+
+  - name: Send Continuous Integration(CI) result to Telegram
+    event:
+      - push
+    when:
+      status:
+        - success
+        - failure
+    depends_on:
+      - deploy
+    image: appleboy/drone-telegram
+    settings:
+      token:
+        from_secret: TELEGRAM_TOKEN
+      to: 
+        from_secret: TELEGRAM_TO
+      format: Markdown
+      message: |-
+        **{{#success build.status}}✅ Deploy is successful**{{else}}❌ Deploy is not successful{{/success}}**
+        📖Project: {{repo.namespace}}/{{repo.name}}
+        🎋Branch: {{commit.branch}}
+        👤Author: {{commit.author}}
+        ✒️Revision: {{truncate commit.sha 8}}
+        ```
+        {{commit.message}}
+        ```
+        ⏲️Time spent: {{since build.started}}
+        🌐Report: {{build.link}}
+
+# trigger:
+#   event:
+#     - tag
+
+volumes:
+  - name: dockersock
+    host:
+      path: /var/run/docker.sock
