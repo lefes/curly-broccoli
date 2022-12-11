@@ -191,10 +191,13 @@ func main() {
 				return
 			}
 			for _, msg := range collectMsg {
-				for _, emoji := range []string{":Bedge:"} {
-					_ = session.MessageReactionAdd(msg.ChannelID, msg.ID, emoji)
-					time.Sleep(200 * time.Millisecond)
+				emoji, err := session.GuildEmoji(msg.GuildID, "Bedge")
+				if err != nil {
+					emoji = &discordgo.Emoji{
+						Name: "😴",
+					}
 				}
+				_ = session.MessageReactionAdd(msg.ChannelID, msg.ID, emoji.APIName())
 			}
 		})
 
@@ -206,10 +209,13 @@ func main() {
 				return
 			}
 			for _, msg := range collectMsg {
-				for _, emoji := range []string{":Wokege:"} {
-					_ = session.MessageReactionAdd(msg.ChannelID, msg.ID, emoji)
-					time.Sleep(200 * time.Millisecond)
+				emoji, err := session.GuildEmoji(msg.GuildID, "Wokege")
+				if err != nil {
+					emoji = &discordgo.Emoji{
+						Name: "🫠",
+					}
 				}
+				_ = session.MessageReactionAdd(msg.ChannelID, msg.ID, emoji.APIName())
 			}
 		})
 
