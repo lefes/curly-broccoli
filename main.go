@@ -183,6 +183,36 @@ func main() {
 			}
 		})
 
+	go msgHistory.NewFilter("спать", func(receiveMsg *discordgo.Message) bool {
+		return strings.Contains(strings.ToLower(receiveMsg.Content), "спать") || strings.Contains(strings.ToLower(receiveMsg.Content), "спишь") || strings.Contains(strings.ToLower(receiveMsg.Content), "сплю") || strings.Contains(strings.ToLower(receiveMsg.Content), "спокойной ночи")
+	}, -1, 3*time.Second, true,
+		func(collectMsg []*discordgo.Message) {
+			if len(collectMsg) == 0 {
+				return
+			}
+			for _, msg := range collectMsg {
+				for _, emoji := range []string{":Bedge:"} {
+					_ = session.MessageReactionAdd(msg.ChannelID, msg.ID, emoji)
+					time.Sleep(200 * time.Millisecond)
+				}
+			}
+		})
+
+	go msgHistory.NewFilter("проснулся", func(receiveMsg *discordgo.Message) bool {
+		return strings.Contains(strings.ToLower(receiveMsg.Content), "просну")
+	}, -1, 3*time.Second, true,
+		func(collectMsg []*discordgo.Message) {
+			if len(collectMsg) == 0 {
+				return
+			}
+			for _, msg := range collectMsg {
+				for _, emoji := range []string{":Wokege:"} {
+					_ = session.MessageReactionAdd(msg.ChannelID, msg.ID, emoji)
+					time.Sleep(200 * time.Millisecond)
+				}
+			}
+		})
+
 	go msgHistory.NewFilter("легион", func(receiveMsg *discordgo.Message) bool {
 		return strings.Contains(strings.ToLower(receiveMsg.Content), "легион")
 	}, -1, 3*time.Second, true,
