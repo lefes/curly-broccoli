@@ -170,6 +170,19 @@ func main() {
 		msgHistory.AddMsg(curMsg.Message)
 	})
 
+	go msgHistory.NewFilter("здесь и не спишь", func(receiveMsg *discordgo.Message) bool {
+		return strings.Contains(strings.ToLower(receiveMsg.Content), "здесь и не спишь")
+	}, -1, 3*time.Second, true,
+		func(collectMsg []*discordgo.Message) {
+			if len(collectMsg) == 0 {
+				return
+			}
+			for _, msg := range collectMsg {
+				// Respond to the message
+				_, _ = session.ChannelMessageSendReply(msg.ChannelID, "Всегда рад тебя поддержать! 😎😎😎", msg.Reference())
+			}
+		})
+
 	go msgHistory.NewFilter("легион", func(receiveMsg *discordgo.Message) bool {
 		return strings.Contains(strings.ToLower(receiveMsg.Content), "легион")
 	}, -1, 3*time.Second, true,
