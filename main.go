@@ -191,7 +191,7 @@ func main() {
 				return
 			}
 			for _, msg := range collectMsg {
-				emoji, err := session.GuildEmoji(msg.GuildID, "Bedge")
+				emoji, err := session.GuildEmoji(collectMsg[0].GuildID, "1016631826338566144")
 				if err != nil {
 					emoji = &discordgo.Emoji{
 						Name: "😴",
@@ -209,7 +209,7 @@ func main() {
 				return
 			}
 			for _, msg := range collectMsg {
-				emoji, err := session.GuildEmoji(msg.GuildID, "Wokege")
+				emoji, err := session.GuildEmoji(msg.GuildID, "1016631674106294353")
 				if err != nil {
 					emoji = &discordgo.Emoji{
 						Name: "🫠",
