@@ -170,6 +170,19 @@ func main() {
 		msgHistory.AddMsg(curMsg.Message)
 	})
 
+	go msgHistory.NewFilter("спасибо", func(receiveMsg *discordgo.Message) bool {
+		return strings.Contains(strings.ToLower(receiveMsg.Content), "спасиб")
+	}, -1, 3*time.Second, true,
+		func(collectMsg []*discordgo.Message) {
+			if len(collectMsg) == 0 {
+				return
+			}
+			for _, msg := range collectMsg {
+				// Respond to the message
+				_, _ = session.ChannelMessageSendReply(msg.ChannelID, "Это тебе спасибо! 😎😎😎", msg.Reference())
+			}
+		})
+
 	go msgHistory.NewFilter("здесь и не спишь", func(receiveMsg *discordgo.Message) bool {
 		return strings.Contains(strings.ToLower(receiveMsg.Content), "здесь и не спишь")
 	}, -1, 3*time.Second, true,
@@ -202,7 +215,7 @@ func main() {
 		})
 
 	go msgHistory.NewFilter("проснулся", func(receiveMsg *discordgo.Message) bool {
-		return strings.Contains(strings.ToLower(receiveMsg.Content), "просну")
+		return strings.Contains(strings.ToLower(receiveMsg.Content), "просну") || strings.Contains(strings.ToLower(receiveMsg.Content), "проснулся") || strings.Contains(strings.ToLower(receiveMsg.Content), "гуд морнинг") || strings.Contains(strings.ToLower(receiveMsg.Content), "доброе утро") || strings.Contains(strings.ToLower(receiveMsg.Content), "добрый день") || strings.Contains(strings.ToLower(receiveMsg.Content), "гуд монинг")
 	}, -1, 3*time.Second, true,
 		func(collectMsg []*discordgo.Message) {
 			if len(collectMsg) == 0 {
@@ -242,7 +255,7 @@ func main() {
 
 	fmt.Println("Bot is now running. Press CTRL-C to exit.")
 	chanSignal := make(chan os.Signal, 1)
-	signal.Notify(chanSignal, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+	signal.Notify(chanSignal, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-chanSignal
 	_ = session.Close()
 }
