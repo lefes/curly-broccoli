@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	Token string = "MTA1MDEwMTk3NDI2MTA1OTY1NQ.GrUzPm.EM3ojHafd8sii15tt3tMEoEIkoEAsmNGnotJ3M"
+	Token string = ""
 )
 
 func init() {
