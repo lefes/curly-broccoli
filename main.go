@@ -1,21 +1,17 @@
 package main
 
 import (
-	"container/list"
 	"flag"
 	"fmt"
 	"os"
-	"os/signal"
 	"strings"
-	"sync"
-	"syscall"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 var (
-	Token string = ""
+	Token string = "MTA1MDEwMTk3NDI2MTA1OTY1NQ.GrUzPm.EM3ojHafd8sii15tt3tMEoEIkoEAsmNGnotJ3M"
 )
 
 func init() {
@@ -31,126 +27,6 @@ func init() {
 	}
 }
 
-type MsgHistory struct {
-	store    map[string]*list.Element
-	list     *list.List
-	notifier map[string]chan *discordgo.Message
-	sync.RWMutex
-}
-
-func NewMsgHistory() *MsgHistory {
-	mh := &MsgHistory{}
-	mh.list = list.New()
-	mh.store = make(map[string]*list.Element, 0)
-	mh.notifier = make(map[string]chan *discordgo.Message, 0)
-	return mh
-}
-
-func (mh *MsgHistory) AddMsg(msg *discordgo.Message) {
-	mh.Lock()
-	defer mh.Unlock()
-	if elem, exists := mh.store[msg.ID]; exists {
-		mh.list.MoveToFront(elem)
-		return
-	} else {
-		mh.list.PushFront(msg)
-		mh.NotifyAll(msg)
-	}
-}
-
-func (mh *MsgHistory) GC(maxLifeTime time.Duration) {
-	time.AfterFunc(
-		maxLifeTime,
-		func() {
-			mh.Lock()
-			defer mh.Unlock()
-			elem := mh.list.Back()
-			if elem == nil {
-				mh.GC(maxLifeTime)
-				return
-			}
-			msg := elem.Value.(*discordgo.Message)
-			var lstModTime *time.Time
-			if editTime := msg.EditedTimestamp; editTime != nil {
-				lstModTime = editTime
-			} else {
-				lstModTime = &msg.Timestamp
-			}
-			if time.Now().After(lstModTime.Add(maxLifeTime)) {
-				mh.list.Remove(elem)
-				delete(mh.store, msg.ID)
-				fmt.Printf("A data has been cleared from the 'MsgHistory' cache, id:%s, content:%s\n", msg.ID, msg.Content)
-			}
-			mh.GC(maxLifeTime)
-		},
-	)
-}
-
-func (mh *MsgHistory) NotifyAll(m *discordgo.Message) {
-	go func() {
-		mh.RLock()
-		defer mh.RUnlock()
-		for _, ch := range mh.notifier {
-			ch <- m
-		}
-	}()
-}
-
-func (mh *MsgHistory) NewFilter(
-	name string,
-	criteriaFunc func(m *discordgo.Message) bool,
-	max int,
-	timeout time.Duration,
-	loop bool,
-	callbackFunc func([]*discordgo.Message),
-) {
-	for {
-		ch := make(chan *discordgo.Message)
-
-		mh.Lock()
-		if _, exists := mh.notifier[name]; exists {
-			panic("has existed")
-		}
-		mh.notifier[name] = ch
-		mh.Unlock()
-		fmt.Printf("Filter: %q Start\n", name)
-		collect := make([]*discordgo.Message, 0)
-
-		if timeout != -1 {
-			time.AfterFunc(timeout, func() {
-				fmt.Printf("timeout: %q\n", name)
-				close(ch)
-			})
-		}
-
-		for {
-			msg, isOpen := <-ch
-			isDone := false
-			if !isOpen {
-				isDone = true
-			} else {
-				if criteriaFunc(msg) {
-					collect = append(collect, msg)
-				}
-				if max != -1 && len(collect) >= max {
-					isDone = true
-				}
-			}
-			if isDone {
-				mh.Lock()
-				delete(mh.notifier, name)
-				mh.Unlock()
-				callbackFunc(collect)
-				if loop {
-					break
-				} else {
-					return
-				}
-			}
-		}
-	}
-}
-
 func main() {
 	session, err := discordgo.New("Bot " + Token)
 	if err != nil {
@@ -158,94 +34,141 @@ func main() {
 		return
 	}
 
+	morningMessages := []string{
+		"доброе утро",
+		"добрый день",
+		"добрый вечер",
+		"доброй ночи",
+		"утро",
+		"утречко",
+		"день",
+		"днечко",
+		"вечер",
+		"вечечко",
+		"ночь",
+		"ночечко",
+		"morning",
+		"evening",
+		"night",
+		"day",
+		"good morning",
+		"good evening",
+		"good night",
+		"good day",
+		"проснул",
+		"открыл глаза",
+	}
+	spokiMessages := []string{
+		"спок",
+		"сладких снов",
+		"спокойной ночи",
+		"до завтра",
+		"спать",
+		"дрем",
+		"кемар",
+		"сплю",
+	}
+	legionEmojis := []string{"🇱", "🇪", "🇬", "🇮", "🇴", "🇳"}
+
 	session.Identify.Intents = discordgo.IntentsGuildMessages
 
-	msgHistory := NewMsgHistory()
-	go msgHistory.GC(10 * time.Second)
-	session.AddHandler(func(s *discordgo.Session, curMsg *discordgo.MessageCreate) {
-		appID := s.State.User.ID
-		if curMsg.Author.ID == appID {
+	session.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
+		if m.Author.ID == s.State.User.ID {
 			return
 		}
-		msgHistory.AddMsg(curMsg.Message)
+		// Checking on spoki and morning event
+		morning := false
+		for _, v := range morningMessages {
+			if strings.Contains(m.Content, v) {
+				morning = true
+			}
+		}
+
+		spoki := false
+		for _, v := range spokiMessages {
+			if strings.Contains(m.Content, v) {
+				spoki = true
+			}
+		}
+
+		if morning {
+			emoji, err := session.GuildEmoji(m.GuildID, "1016631674106294353")
+			if err != nil {
+				emoji = &discordgo.Emoji{
+					Name: "🫠",
+				}
+			}
+			err = session.MessageReactionAdd(m.ChannelID, m.ID, emoji.APIName())
+			if err != nil {
+				fmt.Println("error reacting to message,", err)
+			}
+		}
+
+		if spoki {
+			emoji, err := session.GuildEmoji(m.GuildID, "1016631826338566144")
+			if err != nil {
+				emoji = &discordgo.Emoji{
+					Name: "😴",
+				}
+			}
+			err = session.MessageReactionAdd(m.ChannelID, m.ID, emoji.APIName())
+			if err != nil {
+				fmt.Println("error reacting to message,", err)
+			}
+		}
+
+		// Checking on LEGION event
+		if strings.Contains(m.Content, "легион") {
+			for _, v := range legionEmojis {
+				err := s.MessageReactionAdd(m.ChannelID, m.ID, v)
+				time.Sleep(100 * time.Millisecond)
+				if err != nil {
+					fmt.Println("error reacting to message,", err)
+				}
+			}
+		}
+
+		// Checking on spasibo message
+		if strings.Contains(m.Content, "спасибо") {
+			_, err := s.ChannelMessageSendReply(m.ChannelID, "Это тебе спасибо! 😎😎😎", m.Reference())
+			if err != nil {
+				fmt.Println("error sending message,", err)
+			}
+		}
+
+		// Checking on "привет" message
+		if strings.Contains(m.Content, "привет") {
+			_, err := s.ChannelMessageSendReply(m.ChannelID, "Привет, друг!", m.Reference())
+			if err != nil {
+				fmt.Println("error sending message,", err)
+			}
+		}
+
+		// Checking on "пиф-паф" message
+		if strings.Contains(m.Content, "пиф") && strings.ContainsAny(m.Content, "паф") {
+			_, err := s.ChannelMessageSendReply(m.ChannelID, "Пиф-паф!", m.Reference())
+			if err != nil {
+				fmt.Println("error sending message,", err)
+			}
+		}
+
+		// Checking on "дед инсайд" message
+		if strings.Contains(m.Content, "дед инсайд") {
+			_, err := s.ChannelMessageSendReply(m.ChannelID, "Глисты наконец-то померли?", m.Reference())
+			if err != nil {
+				fmt.Println("error sending message,", err)
+			}
+		}
+
+		// Checking on "я гей" message
+		if strings.Contains(m.Content, "я гей") {
+			_, err := s.ChannelMessageSendReply(m.ChannelID, "Я тоже!", m.Reference())
+			if err != nil {
+				fmt.Println("error sending message,", err)
+			}
+		}
+
 	})
-
-	go msgHistory.NewFilter("спасибо", func(receiveMsg *discordgo.Message) bool {
-		return strings.Contains(strings.ToLower(receiveMsg.Content), "спасиб")
-	}, -1, 3*time.Second, true,
-		func(collectMsg []*discordgo.Message) {
-			if len(collectMsg) == 0 {
-				return
-			}
-			for _, msg := range collectMsg {
-				// Respond to the message
-				_, _ = session.ChannelMessageSendReply(msg.ChannelID, "Это тебе спасибо! 😎😎😎", msg.Reference())
-			}
-		})
-
-	go msgHistory.NewFilter("здесь и не спишь", func(receiveMsg *discordgo.Message) bool {
-		return strings.Contains(strings.ToLower(receiveMsg.Content), "здесь и не спишь")
-	}, -1, 3*time.Second, true,
-		func(collectMsg []*discordgo.Message) {
-			if len(collectMsg) == 0 {
-				return
-			}
-			for _, msg := range collectMsg {
-				// Respond to the message
-				_, _ = session.ChannelMessageSendReply(msg.ChannelID, "Всегда рад тебя поддержать! 😎😎😎", msg.Reference())
-			}
-		})
-
-	go msgHistory.NewFilter("спать", func(receiveMsg *discordgo.Message) bool {
-		return strings.Contains(strings.ToLower(receiveMsg.Content), "спать") || strings.Contains(strings.ToLower(receiveMsg.Content), "спишь") || strings.Contains(strings.ToLower(receiveMsg.Content), "сплю") || strings.Contains(strings.ToLower(receiveMsg.Content), "спокойной ночи")
-	}, -1, 3*time.Second, true,
-		func(collectMsg []*discordgo.Message) {
-			if len(collectMsg) == 0 {
-				return
-			}
-			for _, msg := range collectMsg {
-				emoji, err := session.GuildEmoji(collectMsg[0].GuildID, "1016631826338566144")
-				if err != nil {
-					emoji = &discordgo.Emoji{
-						Name: "😴",
-					}
-				}
-				_ = session.MessageReactionAdd(msg.ChannelID, msg.ID, emoji.APIName())
-			}
-		})
-
-	go msgHistory.NewFilter("проснулся", func(receiveMsg *discordgo.Message) bool {
-		return strings.Contains(strings.ToLower(receiveMsg.Content), "просну") || strings.Contains(strings.ToLower(receiveMsg.Content), "проснулся") || strings.Contains(strings.ToLower(receiveMsg.Content), "гуд морнинг") || strings.Contains(strings.ToLower(receiveMsg.Content), "доброе утро") || strings.Contains(strings.ToLower(receiveMsg.Content), "добрый день") || strings.Contains(strings.ToLower(receiveMsg.Content), "гуд монинг")
-	}, -1, 3*time.Second, true,
-		func(collectMsg []*discordgo.Message) {
-			if len(collectMsg) == 0 {
-				return
-			}
-			for _, msg := range collectMsg {
-				emoji, err := session.GuildEmoji(msg.GuildID, "1016631674106294353")
-				if err != nil {
-					emoji = &discordgo.Emoji{
-						Name: "🫠",
-					}
-				}
-				_ = session.MessageReactionAdd(msg.ChannelID, msg.ID, emoji.APIName())
-			}
-		})
-
-	go msgHistory.NewFilter("легион", func(receiveMsg *discordgo.Message) bool {
-		return strings.Contains(strings.ToLower(receiveMsg.Content), "легион")
-	}, -1, 3*time.Second, true,
-		func(collectMsg []*discordgo.Message) {
-			if len(collectMsg) == 0 {
-				return
-			}
-			for _, msg := range collectMsg {
-				for _, emoji := range []string{"🇱", "🇪", "🇬", "🇮", "🇴", "🇳"} {
-					_ = session.MessageReactionAdd(msg.ChannelID, msg.ID, emoji)
-					time.Sleep(200 * time.Millisecond)
-				}
-			}
-		})
 
 	err = session.Open()
 	if err != nil {
@@ -253,9 +176,7 @@ func main() {
 		return
 	}
 
-	fmt.Println("Bot is now running. Press CTRL-C to exit.")
-	chanSignal := make(chan os.Signal, 1)
-	signal.Notify(chanSignal, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
-	<-chanSignal
-	_ = session.Close()
+	fmt.Println("Bot is now running.  Press CTRL-C to exit.")
+	<-make(chan struct{})
+
 }
