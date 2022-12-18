@@ -177,6 +177,14 @@ func main() {
 			}
 		}
 
+		// Checking on "я би" message
+		if strings.Contains(strings.ToLower(m.Content), "я би") {
+			_, err := s.ChannelMessageSendReply(m.ChannelID, "Я тоже!", m.Reference())
+			if err != nil {
+				fmt.Println("error sending message,", err)
+			}
+		}
+
 	})
 
 	err = session.Open()
