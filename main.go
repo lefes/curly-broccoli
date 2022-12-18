@@ -80,14 +80,14 @@ func main() {
 		// Checking on spoki and morning event
 		morning := false
 		for _, v := range morningMessages {
-			if strings.Contains(m.Content, v) {
+			if strings.Contains(strings.ToLower(m.Content), v) {
 				morning = true
 			}
 		}
 
 		spoki := false
 		for _, v := range spokiMessages {
-			if strings.Contains(m.Content, v) {
+			if strings.Contains(strings.ToLower(m.Content), v) {
 				spoki = true
 			}
 		}
@@ -119,7 +119,7 @@ func main() {
 		}
 
 		// Checking on LEGION event
-		if strings.Contains(m.Content, "легион") {
+		if strings.Contains(strings.ToLower(m.Content), "легион") {
 			for _, v := range legionEmojis {
 				err := s.MessageReactionAdd(m.ChannelID, m.ID, v)
 				time.Sleep(100 * time.Millisecond)
@@ -130,7 +130,7 @@ func main() {
 		}
 
 		// Checking on spasibo message
-		if strings.Contains(m.Content, "спасибо") {
+		if strings.Contains(strings.ToLower(m.Content), "спасибо") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Это тебе спасибо! 😎😎😎", m.Reference())
 			if err != nil {
 				fmt.Println("error sending message,", err)
@@ -138,7 +138,7 @@ func main() {
 		}
 
 		// Checking on "привет" message
-		if strings.Contains(m.Content, "привет") {
+		if strings.Contains(strings.ToLower(m.Content), "привет") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Привет, друг!", m.Reference())
 			if err != nil {
 				fmt.Println("error sending message,", err)
@@ -146,7 +146,7 @@ func main() {
 		}
 
 		// Checking on "пиф-паф" message
-		if strings.Contains(m.Content, "пиф") && strings.ContainsAny(m.Content, "паф") {
+		if strings.Contains(strings.ToLower(m.Content), "пиф") && strings.ContainsAny(strings.ToLower(m.Content), "паф") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Пиф-паф!", m.Reference())
 			if err != nil {
 				fmt.Println("error sending message,", err)
@@ -154,7 +154,7 @@ func main() {
 		}
 
 		// Checking on "дед инсайд" message
-		if strings.Contains(m.Content, "дед инсайд") {
+		if strings.Contains(strings.ToLower(m.Content), "дед инсайд") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Глисты наконец-то померли?", m.Reference())
 			if err != nil {
 				fmt.Println("error sending message,", err)
@@ -162,7 +162,7 @@ func main() {
 		}
 
 		// Checking on "я гей" message
-		if strings.Contains(m.Content, "я гей") {
+		if strings.Contains(strings.ToLower(m.Content), "я гей") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Я тоже!", m.Reference())
 			if err != nil {
 				fmt.Println("error sending message,", err)
