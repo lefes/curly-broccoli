@@ -185,6 +185,22 @@ func main() {
 			}
 		}
 
+		// Checking on "понедельник" message
+		if strings.Contains(strings.ToLower(m.Content), "понедельник") {
+			_, err := s.ChannelMessageSendReply(m.ChannelID, "День тяжелый 😵‍💫", m.Reference())
+			if err != nil {
+				fmt.Println("error sending message,", err)
+			}
+		}
+
+		// Checking on "заболел" message
+		if strings.Contains(strings.ToLower(m.Content), "заболел") {
+			_, err := s.ChannelMessageSendReply(m.ChannelID, "Скорее выздоравливай и больше не болей! 😍", m.Reference())
+			if err != nil {
+				fmt.Println("error sending message,", err)
+			}
+		}
+
 	})
 
 	err = session.Open()
