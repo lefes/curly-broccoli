@@ -59,6 +59,7 @@ func main() {
 		"проснул",
 		"открыл глаза",
 	}
+
 	spokiMessages := []string{
 		"спок",
 		"сладких снов",
@@ -68,7 +69,25 @@ func main() {
 		"дрем",
 		"кемар",
 		"сплю",
+		"пока",
 	}
+
+	phasmaMessages := []string{
+		"фасма",
+		"фазма",
+		"фазму",
+		"фасму",
+		"фазмой",
+		"фасмой",
+		"фазме",
+		"фасме",
+		"фазмы",
+		"фасмы",
+		"phasma",
+		"phasmaphobia",
+		"призрак",
+	}
+
 	legionEmojis := []string{"🇱", "🇪", "🇬", "🇮", "🇴", "🇳"}
 
 	session.Identify.Intents = discordgo.IntentsGuildMessages
@@ -198,6 +217,16 @@ func main() {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Скорее выздоравливай и больше не болей! 😍", m.Reference())
 			if err != nil {
 				fmt.Println("error sending message,", err)
+			}
+		}
+
+		// Checking on "фазма" message
+		for _, v := range phasmaMessages {
+			if strings.Contains(strings.ToLower(m.Content), v) {
+				err := s.MessageReactionAdd(m.ChannelID, m.ID, "👻")
+				if err != nil {
+					fmt.Println("error reacting to message,", err)
+				}
 			}
 		}
 
