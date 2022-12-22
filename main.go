@@ -95,6 +95,15 @@ func main() {
 		"призрак",
 	}
 
+	sickMessages := []string{
+		"заболел",
+		"заболела",
+		"заболело",
+		"заболели",
+		"болею",
+		"болит",
+	}
+
 	legionEmojis := []string{"🇱", "🇪", "🇬", "🇮", "🇴", "🇳"}
 
 	session.Identify.Intents = discordgo.IntentsGuildMessages
@@ -225,10 +234,12 @@ func main() {
 		}
 
 		// Checking on "заболел" message
-		if strings.Contains(strings.ToLower(m.Content), "заболел") {
-			_, err := s.ChannelMessageSendReply(m.ChannelID, "Скорее выздоравливай и больше не болей! 😍", m.Reference())
-			if err != nil {
-				fmt.Println("error sending message,", err)
+		for _, v := range sickMessages {
+			if strings.Contains(strings.ToLower(m.Content), v) {
+				_, err := s.ChannelMessageSendReply(m.ChannelID, "Скорее выздоравливай и больше не болей! 😍", m.Reference())
+				if err != nil {
+					fmt.Println("error sending message,", err)
+				}
 			}
 		}
 
