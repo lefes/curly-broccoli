@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/joho/godotenv"
 )
 
 var (
@@ -15,6 +16,12 @@ var (
 )
 
 func init() {
+	// Load dotenv
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println("Error loading .env file")
+	}
+
 	if Token == "" {
 		flag.StringVar(&Token, "token", "", "token")
 		flag.Parse()
@@ -166,7 +173,12 @@ func main() {
 
 		// Checking on "пиф-паф" message
 		if strings.Contains(strings.ToLower(m.Content), "пиф") && strings.ContainsAny(strings.ToLower(m.Content), "паф") {
-			_, err := s.ChannelMessageSendReply(m.ChannelID, "Пиф-паф!", m.Reference())
+			_, err := s.ChannelMessageSendReply(m.ChannelID, "Пиф-паф!🔫🔫🔫", m.Reference())
+			if err != nil {
+				fmt.Println("error sending message,", err)
+			}
+		} else if strings.Contains(strings.ToLower(m.Content), "pif") && strings.ContainsAny(strings.ToLower(m.Content), "paf") {
+			_, err := s.ChannelMessageSendReply(m.ChannelID, "Pif-paf!🔫🔫🔫", m.Reference())
 			if err != nil {
 				fmt.Println("error sending message,", err)
 			}
