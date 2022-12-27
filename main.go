@@ -112,6 +112,32 @@ func poll(session *discordgo.Session, m *discordgo.MessageCreate) {
 
 }
 
+func getRandomAcademiaQuote() string {
+	type AcademiaQuote struct {
+		Anime     string `json:"anime"`
+		Character string `json:"character"`
+		Quote     string `json:"quote"`
+	}
+
+	// Get a random anime quote
+	resp, err := http.Get("https://animechan.vercel.app/api/random/anime?title=My%20Hero%20Academia")
+	if err != nil {
+		fmt.Println("error getting anime quote,", err)
+		return ""
+	}
+	defer resp.Body.Close()
+
+	// Decode the response
+	var quote AcademiaQuote
+	err = json.NewDecoder(resp.Body).Decode(&quote)
+	if err != nil {
+		fmt.Println("error decoding anime quote,", err)
+		return ""
+	}
+
+	return quote.Quote + " - " + quote.Character
+}
+
 func getRandomAnimeQuote() string {
 
 	type AnimeQuote struct {
@@ -399,6 +425,13 @@ func main() {
 
 		if strings.Contains(strings.ToLower(m.Content), "!quote") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Случайная цитата anime: "+getRandomAnimeQuote(), m.Reference())
+			if err != nil {
+				fmt.Println("error sending message,", err)
+			}
+		}
+
+		if strings.Contains(strings.ToLower(m.Content), "!academia") {
+			_, err := s.ChannelMessageSendReply(m.ChannelID, "Random Quote My Hero Academia: "+getRandomAcademiaQuote(), m.Reference())
 			if err != nil {
 				fmt.Println("error sending message,", err)
 			}
