@@ -16,6 +16,100 @@ var (
 	Token string = ""
 )
 
+func poll(session *discordgo.Session, m *discordgo.MessageCreate) {
+	// Randomly create a poll with 3 options in the channel
+	// Take 3 person from the channel
+	users, err := session.GuildMembers(m.GuildID, "", 300)
+	if err != nil {
+		fmt.Println("error getting users,", err)
+		return
+	}
+
+	// Get 3 random users
+	rand.Seed(time.Now().UnixNano())
+	rand.Shuffle(len(users), func(i, j int) { users[i], users[j] = users[j], users[i] })
+	users = users[:3]
+
+	// Create a poll
+	poll := &discordgo.MessageEmbed{
+		Title: "Кто сегодня писька??? 🤔🤔🤔",
+		Color: 0x00ff00,
+		Fields: []*discordgo.MessageEmbedField{
+			&discordgo.MessageEmbedField{
+				Name:   "1",
+				Value:  getNick(users[0]),
+				Inline: true,
+			},
+			&discordgo.MessageEmbedField{
+				Name:   "2",
+				Value:  getNick(users[1]),
+				Inline: true,
+			},
+			&discordgo.MessageEmbedField{
+				Name:   "3",
+				Value:  getNick(users[2]),
+				Inline: true,
+			},
+		},
+	}
+
+	// Send the poll
+	pollMessage, err := session.ChannelMessageSendEmbed(m.ChannelID, poll)
+	if err != nil {
+		fmt.Println("error sending poll,", err)
+		return
+	}
+
+	reactions := []string{"1️⃣", "2️⃣", "3️⃣"}
+	// Add reactions to the poll
+
+	for _, v := range reactions {
+		err := session.MessageReactionAdd(pollMessage.ChannelID, pollMessage.ID, v)
+		if err != nil {
+			fmt.Println("error adding reaction,", err)
+			return
+		}
+	}
+
+	// Wait for 2 hours
+	time.Sleep(1 * time.Hour)
+
+	// Get the poll results
+	pollResults, err := session.ChannelMessage(pollMessage.ChannelID, pollMessage.ID)
+	if err != nil {
+		fmt.Println("error getting poll results,", err)
+		return
+	}
+
+	// Get the most voted option
+	var mostVotedOption string
+	var mostVotedOptionCount int
+	for _, v := range pollResults.Reactions {
+		if v.Count > mostVotedOptionCount {
+			mostVotedOption = v.Emoji.Name
+			mostVotedOptionCount = v.Count
+		}
+	}
+
+	// Get the winner
+	var winner *discordgo.Member
+	switch mostVotedOption {
+	case "1️⃣":
+		winner = users[0]
+	case "2️⃣":
+		winner = users[1]
+	case "3️⃣":
+		winner = users[2]
+	}
+
+	// Congratulate the winner
+	_, err = session.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Поздравляем, %s, ты сегодня писька! 🎉🎉🎉", getNick(winner)))
+	if err != nil {
+		fmt.Println("error congratulating the winner,", err)
+	}
+
+}
+
 func init() {
 	// Load dotenv
 	err := godotenv.Load()
@@ -270,60 +364,7 @@ func main() {
 		}
 
 		if strings.Contains(strings.ToLower(m.Content), "!голосование") {
-			// Randomly create a poll with 3 options in the channel
-			// Take 3 person from the channel
-			users, err := session.GuildMembers(m.GuildID, "", 300)
-			if err != nil {
-				fmt.Println("error getting users,", err)
-				return
-			}
-
-			// Get 3 random users
-			rand.Seed(time.Now().UnixNano())
-			rand.Shuffle(len(users), func(i, j int) { users[i], users[j] = users[j], users[i] })
-			users = users[:3]
-
-			// Create a poll
-			poll := &discordgo.MessageEmbed{
-				Title: "Кто сегодня писька??? 🤔🤔🤔",
-				Color: 0x00ff00,
-				Fields: []*discordgo.MessageEmbedField{
-					&discordgo.MessageEmbedField{
-						Name:   "1",
-						Value:  getNick(users[0]),
-						Inline: true,
-					},
-					&discordgo.MessageEmbedField{
-						Name:   "2",
-						Value:  getNick(users[1]),
-						Inline: true,
-					},
-					&discordgo.MessageEmbedField{
-						Name:   "3",
-						Value:  getNick(users[2]),
-						Inline: true,
-					},
-				},
-			}
-
-			// Send the poll
-			pollMessage, err := session.ChannelMessageSendEmbed(m.ChannelID, poll)
-			if err != nil {
-				fmt.Println("error sending poll,", err)
-				return
-			}
-
-			reactions := []string{"1️⃣", "2️⃣", "3️⃣"}
-			// Add reactions to the poll
-
-			for _, v := range reactions {
-				err := session.MessageReactionAdd(pollMessage.ChannelID, pollMessage.ID, v)
-				if err != nil {
-					fmt.Println("error adding reaction,", err)
-					return
-				}
-			}
-
+			go poll(s, m)
 		}
 
 	})
