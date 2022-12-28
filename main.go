@@ -1,22 +1,26 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"math/rand"
-	"net/http"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
+	"github.com/lefes/curly-broccoli/quotes"
 )
 
 var (
 	Token string = ""
 )
+
+type Quote interface {
+	GetRandomAcademia() string
+	GetRandom() string
+}
 
 func poll(session *discordgo.Session, m *discordgo.MessageCreate) {
 	// Randomly create a poll with 3 options in the channel
@@ -112,60 +116,6 @@ func poll(session *discordgo.Session, m *discordgo.MessageCreate) {
 
 }
 
-func getRandomAcademiaQuote() string {
-	type AcademiaQuote struct {
-		Anime     string `json:"anime"`
-		Character string `json:"character"`
-		Quote     string `json:"quote"`
-	}
-
-	// Get a random anime quote
-	resp, err := http.Get("https://animechan.vercel.app/api/random/anime?title=My%20Hero%20Academia")
-	if err != nil {
-		fmt.Println("error getting anime quote,", err)
-		return ""
-	}
-	defer resp.Body.Close()
-
-	// Decode the response
-	var quote AcademiaQuote
-	err = json.NewDecoder(resp.Body).Decode(&quote)
-	if err != nil {
-		fmt.Println("error decoding anime quote,", err)
-		return ""
-	}
-
-	return quote.Quote + " - " + quote.Character
-}
-
-func getRandomAnimeQuote() string {
-
-	type AnimeQuote struct {
-		Anime     string `json:"anime"`
-		Character string `json:"character"`
-		Quote     string `json:"quote"`
-	}
-
-	// Get a random anime quote
-	resp, err := http.Get("https://animechan.vercel.app/api/random")
-	if err != nil {
-		fmt.Println("error getting anime quote,", err)
-		return ""
-	}
-	defer resp.Body.Close()
-
-	// Decode the response
-	var quote AnimeQuote
-	err = json.NewDecoder(resp.Body).Decode(&quote)
-	if err != nil {
-		fmt.Println("error decoding anime quote,", err)
-		return ""
-	}
-
-	return quote.Quote + " - " + quote.Character + ", " + quote.Anime
-
-}
-
 func init() {
 	// Load dotenv
 	err := godotenv.Load()
@@ -193,11 +143,15 @@ func getNick(member *discordgo.Member) string {
 }
 
 func main() {
+	// Create a new Discord session using the provided bot token.
 	session, err := discordgo.New("Bot " + Token)
 	if err != nil {
 		fmt.Println("error creating Discord session,", err)
 		return
 	}
+
+	// Create interface for quotes
+	quote := quotes.New()
 
 	morningMessages := []string{
 		"доброе утро",
@@ -424,14 +378,14 @@ func main() {
 		}
 
 		if strings.Contains(strings.ToLower(m.Content), "!quote") {
-			_, err := s.ChannelMessageSendReply(m.ChannelID, "Случайная цитата anime: "+getRandomAnimeQuote(), m.Reference())
+			_, err := s.ChannelMessageSendReply(m.ChannelID, quote.GetRandom(), m.Reference())
 			if err != nil {
 				fmt.Println("error sending message,", err)
 			}
 		}
 
 		if strings.Contains(strings.ToLower(m.Content), "!academia") {
-			_, err := s.ChannelMessageSendReply(m.ChannelID, "Random Quote My Hero Academia: "+getRandomAcademiaQuote(), m.Reference())
+			_, err := s.ChannelMessageSendReply(m.ChannelID, quote.GetRandomAcademia(), m.Reference())
 			if err != nil {
 				fmt.Println("error sending message,", err)
 			}
