@@ -391,10 +391,18 @@ func main() {
 			}
 		}
 
-		if strings.Contains(strings.ToLower(m.Content), "!писька") {
+		if strings.HasPrefix(strings.ToLower(m.Content), "!писька") {
 			rand.Seed(time.Now().UnixNano())
+			user := "Ты"
+			if len(m.Mentions) != 0 {
+				member, err := s.GuildMember(m.GuildID, m.Mentions[0].ID)
+				if err == nil {
+					user = getNick(member)
+				}
+			}
+
 			//#nosec G404 -- This is a false positive
-			_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("Ты Писька на %d%%", rand.Intn(101)), m.Reference())
+			_, err = s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("%s писька на %d%%", user, rand.Intn(101)), m.Reference())
 			if err != nil {
 				fmt.Println("error sending message,", err)
 			}
