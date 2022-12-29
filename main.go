@@ -391,6 +391,15 @@ func main() {
 			}
 		}
 
+		if strings.Contains(strings.ToLower(m.Content), "!писька") {
+			rand.Seed(time.Now().UnixNano())
+			//#nosec G404 -- This is a false positive
+			_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("Ты Писька на %d%%", rand.Intn(101)), m.Reference())
+			if err != nil {
+				fmt.Println("error sending message,", err)
+			}
+		}
+
 	})
 
 	err = session.Open()
