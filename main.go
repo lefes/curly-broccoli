@@ -432,6 +432,22 @@ func main() {
 			//#nosec G404 -- This is a false positive
 			piskaProc := rand.Intn(101)
 
+			if piskaProc == 100 {
+				_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("%s, ты просто прекрасная писька на ВСЕ 100%%", user), m.Reference())
+				if err != nil {
+					fmt.Println("error sending message,", err)
+				}
+				return
+			}
+
+			if piskaProc == 0 {
+				_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("Извини, %s, но ты совсем не писька (0%%), приходи когда описюнеешь", user), m.Reference())
+				if err != nil {
+					fmt.Println("error sending message,", err)
+				}
+				return
+			}
+
 			//#nosec G404 -- This is a false positive
 			if rand.Intn(2) == 0 && piskaProc > 50 {
 				//#nosec G404 -- This is a false positive
