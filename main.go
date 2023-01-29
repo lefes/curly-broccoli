@@ -241,6 +241,27 @@ func main() {
 		"болит",
 	}
 
+	potterMessages := []string{
+		"гарри",
+		"поттер",
+		"гарик",
+		"гаррик",
+		"потник",
+		"потер",
+		"гари",
+		"хогвартс",
+		"хогварт",
+		"хогвардс",
+		"хогвард",
+		"гаррипоттер",
+	}
+
+	valorantMessages := []string{
+		"валорант",
+		"валик",
+		"валарант",
+	}
+
 	legionEmojis := []string{"🇱", "🇪", "🇬", "🇮", "🇴", "🇳"}
 
 	session.Identify.Intents = discordgo.IntentsGuildMessages
@@ -476,6 +497,42 @@ func main() {
 				return
 			}
 			_, err = s.ChannelMessageSendReply(m.ChannelID, joke, m.Reference())
+			if err != nil {
+				fmt.Println("error sending message,", err)
+			}
+		}
+
+		for _, v := range potterMessages {
+			if strings.Contains(strings.ToLower(m.Content), v) {
+				err := s.MessageReactionAdd(m.ChannelID, m.ID, "🧙")
+				if err != nil {
+					fmt.Println("error reacting message,", err)
+				}
+				err = s.MessageReactionAdd(m.ChannelID, m.ID, "⚡️")
+				if err != nil {
+					fmt.Println("error reacting message,", err)
+				}
+			}
+		}
+
+		for _, v := range valorantMessages {
+			if strings.Contains(strings.ToLower(m.Content), v) {
+				err := s.MessageReactionAdd(m.ChannelID, m.ID, "🔥")
+				if err != nil {
+					fmt.Println("error reacting message,", err)
+				}
+			}
+		}
+
+		if strings.Contains(strings.ToLower(m.Content), "я писюн") {
+			_, err := s.ChannelMessageSendReply(m.ChannelID, "Я тоже писюн!!!", m.Reference())
+			if err != nil {
+				fmt.Println("error sending message,", err)
+			}
+		}
+
+		if strings.Contains(strings.ToLower(m.Content), "я писька") {
+			_, err := s.ChannelMessageSendReply(m.ChannelID, "Я тоже писька!!!", m.Reference())
 			if err != nil {
 				fmt.Println("error sending message,", err)
 			}
