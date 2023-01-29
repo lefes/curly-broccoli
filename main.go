@@ -10,6 +10,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
+	"github.com/lefes/curly-broccoli/jokes"
 	"github.com/lefes/curly-broccoli/quotes"
 )
 
@@ -463,6 +464,18 @@ func main() {
 
 			//#nosec G404 -- This is a false positive
 			_, err = s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s> писька на %d%%, но нужно еще вырасти!", user, piskaProc), m.Reference())
+			if err != nil {
+				fmt.Println("error sending message,", err)
+			}
+		}
+
+		if strings.HasPrefix(strings.ToLower(m.Content), "!анекдот") {
+			joke, err := jokes.GetJoke()
+			if err != nil {
+				fmt.Println("error getting joke,", err)
+				return
+			}
+			_, err = s.ChannelMessageSendReply(m.ChannelID, joke, m.Reference())
 			if err != nil {
 				fmt.Println("error sending message,", err)
 			}
