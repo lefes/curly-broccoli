@@ -17,11 +17,6 @@ var (
 	Token string = ""
 )
 
-type Quote interface {
-	GetRandomAcademia() string
-	GetRandom() string
-}
-
 func poll(session *discordgo.Session, m *discordgo.MessageCreate) {
 	// Randomly create a poll with 3 options in the channel
 	// Take 3 person from the channel
@@ -32,7 +27,6 @@ func poll(session *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Get 3 random users
-	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(users), func(i, j int) { users[i], users[j] = users[j], users[i] })
 	users = users[:3]
 
@@ -109,7 +103,7 @@ func poll(session *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Congratulate the winner
-	_, err = session.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Поздравляем, %s, ты сегодня писька! 🎉🎉🎉", getNick(winner)))
+	_, err = session.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Поздравляем, <@%s>, ты сегодня писька! 🎉🎉🎉", winner.User.ID))
 	if err != nil {
 		fmt.Println("error congratulating the winner,", err)
 	}
@@ -133,6 +127,7 @@ func init() {
 			panic("You need to input the token.")
 		}
 	}
+	rand.Seed(time.Now().UnixNano())
 }
 
 func getNick(member *discordgo.Member) string {
@@ -421,12 +416,11 @@ func main() {
 		}
 
 		if strings.HasPrefix(strings.ToLower(m.Content), "!писька") {
-			rand.Seed(time.Now().UnixNano())
-			user := "Ты"
+			user := m.Author.ID
 			if len(m.Mentions) != 0 {
 				member, err := s.GuildMember(m.GuildID, m.Mentions[0].ID)
 				if err == nil {
-					user = getNick(member)
+					user = member.User.ID
 				}
 			}
 
@@ -434,7 +428,7 @@ func main() {
 			piskaProc := rand.Intn(101)
 
 			if piskaProc == 100 {
-				_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("%s, ты просто прекрасная писька на ВСЕ 100%%", user), m.Reference())
+				_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>, ты просто прекрасная писька на ВСЕ 100%%", user), m.Reference())
 				if err != nil {
 					fmt.Println("error sending message,", err)
 				}
@@ -442,7 +436,7 @@ func main() {
 			}
 
 			if piskaProc == 0 {
-				_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("Извини, %s, но ты совсем не писька (0%%), приходи когда описюнеешь", user), m.Reference())
+				_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("Извини, <@%s>, но ты совсем не писька (0%%), приходи когда описюнеешь", user), m.Reference())
 				if err != nil {
 					fmt.Println("error sending message,", err)
 				}
@@ -452,7 +446,7 @@ func main() {
 			//#nosec G404 -- This is a false positive
 			if rand.Intn(2) == 0 && piskaProc > 50 {
 				//#nosec G404 -- This is a false positive
-				_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("%s настоящая писька на %d%%, вот тебе цитата: %s", user, piskaProc, quotesPublic[rand.Intn(len(quotesPublic))]), m.Reference())
+				_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s> настоящая писька на %d%%, вот тебе цитата: %s", user, piskaProc, quotesPublic[rand.Intn(len(quotesPublic))]), m.Reference())
 				if err != nil {
 					fmt.Println("error sending message,", err)
 				}
@@ -460,7 +454,7 @@ func main() {
 			}
 
 			if piskaProc > 50 {
-				_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("%s писька на %d%%, молодец, так держать!", user, piskaProc), m.Reference())
+				_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s> писька на %d%%, молодец, так держать!", user, piskaProc), m.Reference())
 				if err != nil {
 					fmt.Println("error sending message,", err)
 				}
@@ -468,7 +462,7 @@ func main() {
 			}
 
 			//#nosec G404 -- This is a false positive
-			_, err = s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("%s писька на %d%%, но нужно еще вырасти!", user, piskaProc), m.Reference())
+			_, err = s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s> писька на %d%%, но нужно еще вырасти!", user, piskaProc), m.Reference())
 			if err != nil {
 				fmt.Println("error sending message,", err)
 			}
