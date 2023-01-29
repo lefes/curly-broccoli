@@ -508,10 +508,6 @@ func main() {
 				if err != nil {
 					fmt.Println("error reacting message,", err)
 				}
-				err = s.MessageReactionAdd(m.ChannelID, m.ID, "⚡️")
-				if err != nil {
-					fmt.Println("error reacting message,", err)
-				}
 			}
 		}
 
