@@ -473,6 +473,14 @@ func main() {
 		if strings.HasPrefix(strings.ToLower(m.Content), "!писька") {
 			user := m.Author.ID
 			if len(m.Mentions) != 0 {
+				//#nosec G404 -- This is a false positive
+				if rand.Intn(10) == 0 {
+					_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>, а вот и нет, писька это ты!!!", user), m.Reference())
+					if err != nil {
+						fmt.Println("error sending message,", err)
+					}
+					return
+				}
 				member, err := s.GuildMember(m.GuildID, m.Mentions[0].ID)
 				if err == nil {
 					user = member.User.ID
