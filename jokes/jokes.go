@@ -1,6 +1,7 @@
 package jokes
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/PuerkitoBio/goquery"
@@ -21,7 +22,11 @@ func GetJoke() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Error closing file: %s\n", err)
+		}
+	}()
 
 	// Parse HTML and find tag with joke by CSS selector
 	doc, err := goquery.NewDocumentFromReader(resp.Body)

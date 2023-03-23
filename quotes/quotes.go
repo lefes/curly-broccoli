@@ -23,7 +23,11 @@ func (q *Quote) GetRandomAcademia() string {
 		fmt.Println("error getting anime quote,", err)
 		return ""
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Error closing file: %s\n", err)
+		}
+	}()
 
 	// Decode the response
 	var quote Quote
@@ -43,7 +47,11 @@ func (q *Quote) GetRandom() string {
 		fmt.Println("error getting anime quote,", err)
 		return ""
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Error closing file: %s\n", err)
+		}
+	}()
 
 	// Decode the response
 	var quote Quote
