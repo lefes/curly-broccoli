@@ -590,6 +590,13 @@ func main() {
 			}
 		}
 
+		if strings.Contains(strings.ToLower(m.Content), "клоун") {
+			err := s.MessageReactionAdd(m.ChannelID, m.ID, "🤡")
+			if err != nil {
+				fmt.Println("error reacting message,", err)
+			}
+		}
+
 	})
 
 	err = session.Open()
