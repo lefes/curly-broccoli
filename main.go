@@ -129,6 +129,7 @@ func init() {
 		}
 	}
 	rand.Seed(time.Now().UnixNano())
+
 }
 
 func getNick(member *discordgo.Member) string {
@@ -136,6 +137,26 @@ func getNick(member *discordgo.Member) string {
 		return member.User.Username
 	}
 	return member.Nick
+}
+
+func piskaMessage(users []string) string {
+	var message string
+	rand.Seed(time.Now().UnixNano())
+	message += "🤔🤔🤔"
+	for _, user := range users {
+		// #nosec G404 -- This is a false positive
+		piskaProc := rand.Intn(101)
+		if piskaProc == 0 {
+			message += fmt.Sprintf("\nИзвини, <@%s>, но ты совсем не писька (0%%), приходи когда описюнеешь", user)
+		} else if piskaProc == 100 {
+			message += fmt.Sprintf("\n<@%s>, ты просто прекрасная писька на ВСЕ 100%%", user)
+		} else if piskaProc >= 50 {
+			message += fmt.Sprintf("\n<@%s> писька на %d%%, молодец, так держать!", user, piskaProc)
+		} else {
+			message += fmt.Sprintf("\n<@%s> писька на %d%%, но нужно еще вырасти", user, piskaProc)
+		}
+	}
+	return message
 }
 
 func main() {
@@ -537,6 +558,34 @@ func main() {
 			if err != nil {
 				fmt.Println("error sending message,", err)
 			}
+		}
+
+		if strings.HasPrefix(strings.ToLower(m.Content), "!письки") {
+			user := m.Author.ID
+			users := make([]string, 0)
+			if len(m.Mentions) != 0 {
+				//#nosec G404 -- This is a false positive
+				if rand.Intn(10) == 0 {
+					_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>, а вот и нет, писька это ты!!!", user), m.Reference())
+					if err != nil {
+						fmt.Println("error sending message,", err)
+					}
+					return
+				}
+				for _, mention := range m.Mentions {
+					member, err := s.GuildMember(m.GuildID, mention.ID)
+					if err == nil {
+						users = append(users, member.User.ID)
+					}
+				}
+			}
+
+			_, err := s.ChannelMessageSendReply(m.ChannelID, piskaMessage(users), m.Reference())
+			if err != nil {
+				fmt.Println("error sending message,", err)
+			}
+			return
+
 		}
 
 		if strings.HasPrefix(strings.ToLower(m.Content), "!анекдот") {

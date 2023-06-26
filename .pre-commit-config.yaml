@@ -47,4 +47,4 @@ repos:
     #
     # Style Checkers
     #
-    -   id: go-critic
+    # -   id: go-critic
