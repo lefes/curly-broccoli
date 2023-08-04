@@ -504,7 +504,7 @@ func main() {
 			if len(m.Mentions) != 0 {
 				//#nosec G404 -- This is a false positive
 				if rand.Intn(10) == 0 {
-					_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>, кажется медведь завалит тебя 🐻🐻🐻", user), m.Reference())
+					_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>, кажется медведь прямо сейчас завалит тебя 🐻🐻🐻", user), m.Reference())
 					if err != nil {
 						fmt.Println("error sending message,", err)
 					}
@@ -518,7 +518,7 @@ func main() {
 
 			//#nosec G404 -- This is a false positive
 			medvedProc := rand.Intn(101)
-			_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>, у тебя есть шанс завалить медведя с %d%% вероятностью 🐻", user, medvedProc), m.Reference())
+			_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>, завалишь медведя с %d%% вероятностью 🐻", user, medvedProc), m.Reference())
 			if err != nil {
 				fmt.Println("error sending message,", err)
 			}
