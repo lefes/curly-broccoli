@@ -524,6 +524,16 @@ func main() {
 			}
 		}
 
+		if strings.HasPrefix(strings.ToLower(m.Content), "!ролл") || strings.HasPrefix(strings.ToLower(m.Content), "!d20") {
+			user := m.Author.ID
+			//#nosec G404 -- This is a false positive
+			roll := rand.Intn(20) + 1
+			_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>, ты выкинул %d", user, roll), m.Reference())
+			if err != nil {
+				fmt.Println("error sending message,", err)
+			}
+		}
+
 		if strings.HasPrefix(strings.ToLower(m.Content), "!писька") {
 			user := m.Author.ID
 			if len(m.Mentions) != 0 {
