@@ -7,15 +7,26 @@ import (
 	"os"
 	"strings"
 	"time"
+	"context"
+	"log"
+	"os/signal"
+	"syscall"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 	"github.com/lefes/curly-broccoli/jokes"
 	"github.com/lefes/curly-broccoli/quotes"
+	"github.com/diamondburned/arikawa/v3/gateway"
+	"github.com/diamondburned/arikawa/v3/session"
+	"github.com/joho/godotenv"
 )
 
 var (
 	Token string = ""
+	botID      string
+	counter    int
+	targetUser string
+	clownEmoji string // Имя эмодзи для смайла клоуна
 )
 
 func poll(session *discordgo.Session, m *discordgo.MessageCreate) {
@@ -159,6 +170,29 @@ func piskaMessage(users []string) string {
 	return message
 }
 
+func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
+	if m.Author.ID == botID {
+		return
+	}
+
+	// Проверка, что сообщение от целевого пользователя и содержит слово "умер"
+	if m.Author.ID == targetUser && strings.Contains(strings.ToLower(m.Content), "умер" ) {
+		counter++
+		response := fmt.Sprintf("Сволочи, они убили @%s %d раз(а) 💀🔫", counter)
+		message, err := s.ChannelMessageSend(m.ChannelID, response)
+		if err != nil {
+			fmt.Println("Ошибка отправки сообщения:", err)
+			return
+		}
+
+		// Добавление реакции в виде смайла клоуна
+		err = s.MessageReactionAdd(message.ChannelID, message.ID, clownEmoji)
+		if err != nil {
+			fmt.Println("Ошибка добавления реакции:", err)
+			return
+		}
+	}
+
 func main() {
 	// Create a new Discord session using the provided bot token.
 	session, err := discordgo.New("Bot " + Token)
@@ -169,6 +203,10 @@ func main() {
 
 	// Create interface for quotes
 	quote := quotes.New()
+
+	targetUser = "850043154207604736"
+
+	clownEmoji = "🤡" // Замените на нужное вам имя эмодзи
 
 	morningMessages := []string{
 		"доброе утро",
