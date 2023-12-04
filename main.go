@@ -511,6 +511,14 @@ func main() {
 			}
 		}
 
+		// Checking on "алкаш" message
+		if strings.Contains(strings.ToLower(m.Content), "алкаш") {
+			_, err := s.ChannelMessageSendReply(m.ChannelID, "Эй мальчик, давай обмен,я же вижу что ты алкаш (c) Чайок", m.Reference())
+			if err != nil {
+				fmt.Println("error sending message,", err)
+			}
+		}
+
 		// Checking on "полчаса" message
 		if strings.Contains(strings.ToLower(m.Content), "полчаса") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "полчаса, полчаса - не вопрос. Не ответ полчаса, полчаса (c) Чайок", m.Reference())
