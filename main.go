@@ -15,7 +15,8 @@ import (
 )
 
 var (
-	Token string = ""
+	Token   string = ""
+	counter        = 0
 )
 
 func poll(session *discordgo.Session, m *discordgo.MessageCreate) {
@@ -392,6 +393,17 @@ func main() {
 			}
 		}
 
+		// Проверка, что сообщение от целевого пользователя и содержит слово "умер"
+		if m.Author.ID == "850043154207604736" && strings.Contains(strings.ToLower(m.Content), "умер") {
+			counter++
+			response := fmt.Sprintf("Сволочи, они убили @%s %d раз(а) 💀🔫", m.Author.Username, counter)
+			_, err := s.ChannelMessageSend(m.ChannelID, response)
+			if err != nil {
+				fmt.Println("Ошибка отправки сообщения:", err)
+				return
+			}
+		}
+
 		// Checking on "пиф-паф" message
 		if strings.Contains(strings.ToLower(m.Content), "пиф") && strings.ContainsAny(strings.ToLower(m.Content), "паф") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Пиф-паф!🔫🔫🔫", m.Reference())
@@ -400,6 +412,14 @@ func main() {
 			}
 		} else if strings.Contains(strings.ToLower(m.Content), "pif") && strings.ContainsAny(strings.ToLower(m.Content), "paf") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Pif-paf!🔫🔫🔫", m.Reference())
+			if err != nil {
+				fmt.Println("error sending message,", err)
+			}
+		}
+
+		// Checking on "алкаш" message
+		if strings.Contains(strings.ToLower(m.Content), "алкаш") {
+			_, err := s.ChannelMessageSendReply(m.ChannelID, "Эй мальчик, давай обмен,я же вижу что ты алкаш (c) Чайок", m.Reference())
 			if err != nil {
 				fmt.Println("error sending message,", err)
 			}
