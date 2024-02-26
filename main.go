@@ -319,6 +319,8 @@ func main() {
 
 	legionEmojis := []string{"🇱", "🇪", "🇬", "🇮", "🇴", "🇳"}
 
+	covenEmojis := []string{"🇨", "🇴", "🇻", "🇪", "🇳"}
+
 	session.Identify.Intents = discordgo.IntentsGuildMessages
 
 	session.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -369,6 +371,18 @@ func main() {
 		// Checking on LEGION event
 		if strings.Contains(strings.ToLower(m.Content), "легион") {
 			for _, v := range legionEmojis {
+				err := s.MessageReactionAdd(m.ChannelID, m.ID, v)
+				time.Sleep(100 * time.Millisecond)
+				if err != nil {
+					fmt.Println("error reacting to message,", err)
+				}
+			}
+		}
+
+		
+		// Checking on COVEN event
+		if strings.Contains(strings.ToLower(m.Content), "ковен") || strings.Contains(strings.ToLower(m.Content), "сестры") || strings.Contains(strings.ToLower(m.Content), "сёстры") {
+			for _, v := range covenEmojis {
 				err := s.MessageReactionAdd(m.ChannelID, m.ID, v)
 				time.Sleep(100 * time.Millisecond)
 				if err != nil {
