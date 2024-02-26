@@ -319,7 +319,7 @@ func main() {
 
 	legionEmojis := []string{"🇱", "🇪", "🇬", "🇮", "🇴", "🇳"}
 
-	covenEmojis := []string{"c", "o", "v", "e", "🇳"}
+	covenEmojis := []string{"🇨", "🇴", "🇻", "🇪", "🇳"}
 
 	session.Identify.Intents = discordgo.IntentsGuildMessages
 
@@ -381,7 +381,7 @@ func main() {
 
 		
 		// Checking on COVEN event
-		if strings.Contains(strings.ToLower(m.Content), "ковен", "сестры") {
+		if strings.Contains(strings.ToLower(m.Content), "ковен") || strings.Contains(strings.ToLower(m.Content), "сестры") {
 			for _, v := range covenEmojis {
 				err := s.MessageReactionAdd(m.ChannelID, m.ID, v)
 				time.Sleep(100 * time.Millisecond)
