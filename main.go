@@ -381,7 +381,7 @@ func main() {
 
 		
 		// Checking on COVEN event
-		if strings.Contains(strings.ToLower(m.Content), "ковен") || strings.Contains(strings.ToLower(m.Content), "сестры") {
+		if strings.Contains(strings.ToLower(m.Content), "ковен") || strings.Contains(strings.ToLower(m.Content), "сестры") || strings.Contains(strings.ToLower(m.Content), "сёстры") {
 			for _, v := range covenEmojis {
 				err := s.MessageReactionAdd(m.ChannelID, m.ID, v)
 				time.Sleep(100 * time.Millisecond)
