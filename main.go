@@ -12,6 +12,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/lefes/curly-broccoli/jokes"
 	"github.com/lefes/curly-broccoli/quotes"
+	"github.com/logrusorgru/aurora"
 )
 
 var (
@@ -158,6 +159,42 @@ func piskaMessage(users []string) string {
 		}
 	}
 	return message
+}
+
+func gayMessage(m *discordgo.MessageCreate, users []string) string {
+    var message string
+    rand.Seed(time.Now().UnixNano())
+    message += "🤔🤔🤔"
+    for _, user := range users {
+        gayProc := rand.Intn(101)
+        if gayProc == 0 {
+            message += fmt.Sprintf("\n%s, извини, но тебе еще далеко до настоящего GaY (0%%) 😔", aurora.Gray(fmt.Sprintf("<@%s>", user)))
+        } else if gayProc == 100 {
+            messageText := fmt.Sprintf("\n%s, ты просто wounderful GaY на ВСЕ 400%%! 🏳️‍🌈✨", aurora.Rainbow(fmt.Sprintf("<@%s>", user)))
+            message += messageText
+            go animateReactions(m.ChannelID, messageText) // Запускаем анимацию в горутине
+        } else if gayProc >= 50 {
+            message += fmt.Sprintf("\n%s, GaY на %d%%, шлепаю тебя по попке! 😉🍑", aurora.Cyan(fmt.Sprintf("<@%s>", user)), gayProc)
+        } else {
+            message += fmt.Sprintf("\n%s, GaY на %d%%, но нужно еще послушать Elton John'a! 🎧", aurora.Yellow(fmt.Sprintf("<@%s>", user)), gayProc) 
+        }
+    }
+    return message
+}
+
+func animateReactions(channelID string, messageText string) {
+    message, err := s.ChannelMessageSend(channelID, messageText) // Отправляем сообщение
+    if err != nil {
+        fmt.Println("error sending message:", err)
+        return
+    }
+
+    emojis := []string{"🏳️‍🌈", "💖", "✨", "🌈", "🦄"} // Эмодзи для анимации
+    for _, emoji := range emojis {
+        s.MessageReactionAdd(channelID, message.ID, emoji)
+        time.Sleep(time.Millisecond * 500) // Задержка между кадрами
+        s.MessageReactionRemove(channelID, message.ID, emoji)
+    }
 }
 
 func main() {
@@ -627,6 +664,29 @@ func main() {
 			if err != nil {
 				fmt.Println("error sending message,", err)
 			}
+		}
+		
+		if strings.HasPrefix(strings.ToLower(m.Content), "!гей") { 
+    			users := []string{m.Author.ID} // Добавляем автора команды в список пользователей
+    			if len(m.Mentions) != 0 {
+        			//#nosec G404 -- This is a false positive
+        			if rand.Intn(10) == 0 {
+            			_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>, а может быть ты???!!!", users[0]), m.Reference())
+            				if err != nil {
+                			fmt.Println("error sending message,", err)
+            			}
+            			return
+        		}
+        	for _, mention := range m.Mentions {
+            		users = append(users, mention.ID) // Добавляем упомянутых пользователей
+        		}
+    		}
+
+    			message := gayMessage(m, users) // Генерируем сообщение с помощью функции gayMessage
+    				_, err := s.ChannelMessageSendReply(m.ChannelID, message, m.Reference())
+    					if err != nil {
+        				fmt.Println("error sending message:", err)
+    				}
 		}
 
 		if strings.HasPrefix(strings.ToLower(m.Content), "!письки") {
