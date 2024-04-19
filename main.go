@@ -399,6 +399,14 @@ func main() {
 			}
 		}
 
+		// Checking on бобр message
+		if strings.Contains(strings.ToLower(m.Content), "бобр") || strings.Contains(strings.ToLower(m.Content), "бобер") || strings.Contains(strings.ToLower(m.Content) "курва" {
+			_, err := s.ChannelMessageSendReply(m.ChannelID, "Kurwa bóbr. Ja pierdolę, Jakie bydlę jebane 🦫🦫🦫", m.Reference())
+			if err != nil {
+				fmt.Println("error sending message,", err)
+			}
+		}
+		
 		// Checking on "привет" message
 		if strings.Contains(strings.ToLower(m.Content), "привет") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Привет!", m.Reference())
