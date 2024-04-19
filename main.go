@@ -7,6 +7,8 @@ import (
 	"os"
 	"strings"
 	"time"
+	"encoding/json"
+	"io/ioutil"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
@@ -18,6 +20,14 @@ var (
 	Token   string = ""
 	counter        = 0
 )
+
+// Структура для хранения количества смертей
+type DeathCounter struct {
+	Count int `json:"count"`
+}
+
+// Путь к файлу для сохранения счетчика
+const deathCountFile = "death_count.json"
 
 func poll(session *discordgo.Session, m *discordgo.MessageCreate) {
 	// Randomly create a poll with 3 options in the channel
@@ -31,6 +41,9 @@ func poll(session *discordgo.Session, m *discordgo.MessageCreate) {
 	// Get 3 random users
 	rand.Shuffle(len(users), func(i, j int) { users[i], users[j] = users[j], users[i] })
 	users = users[:3]
+
+	// Загрузка счетчика смертей из файла
+	counter := loadDeathCount()
 
 	// Create a poll
 	poll := &discordgo.MessageEmbed{
@@ -158,6 +171,39 @@ func piskaMessage(users []string) string {
 		}
 	}
 	return message
+}
+
+// Загрузка счетчика смертей из файла
+func loadDeathCount() int {
+	data, err := ioutil.ReadFile(deathCountFile)
+	if err != nil {
+		// Если файл не существует или есть ошибка чтения, начинаем с 0
+		return 0
+	}
+
+	var counter DeathCounter
+	err = json.Unmarshal(data, &counter)
+	if err != nil {
+		fmt.Println("Ошибка чтения счетчика смертей:", err)
+		return 0
+	}
+
+	return counter.Count
+}
+
+// Сохранение счетчика смертей в файл
+func saveDeathCount(count int) {
+	counter := DeathCounter{Count: count}
+	data, err := json.MarshalIndent(counter, "", "  ")
+	if err != nil {
+		fmt.Println("Ошибка сериализации счетчика смертей:", err)
+		return
+	}
+
+	err = ioutil.WriteFile(deathCountFile, data, 0644)
+	if err != nil {
+		fmt.Println("Ошибка записи счетчика смертей:", err)
+	}
 }
 
 func main() {
@@ -398,6 +444,14 @@ func main() {
 				fmt.Println("error sending message,", err)
 			}
 		}
+		
+		// Checking on бобр message
+		if strings.Contains(strings.ToLower(m.Content), "бобр") || strings.Contains(strings.ToLower(m.Content), "бобер") || strings.Contains(strings.ToLower(m.Content) "курва" {
+			_, err := s.ChannelMessageSendReply(m.ChannelID, "Kurwa bóbr. Ja pierdolę, Jakie bydlę jebane 🦫🦫🦫", m.Reference())
+			if err != nil {
+				fmt.Println("error sending message,", err)
+			}
+		}
 
 		// Checking on бобр message
 		if strings.Contains(strings.ToLower(m.Content), "бобр") || strings.Contains(strings.ToLower(m.Content), "бобер") || strings.Contains(strings.ToLower(m.Content) "курва" {
@@ -424,6 +478,9 @@ func main() {
 				fmt.Println("Ошибка отправки сообщения:", err)
 				return
 			}
+
+			// Сохранение счетчика смертей в файл
+			saveDeathCount(counter)
 		}
 
 		// Checking on "пиф-паф" message
