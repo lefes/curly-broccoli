@@ -12,6 +12,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/lefes/curly-broccoli/jokes"
 	"github.com/lefes/curly-broccoli/quotes"
+	"github.com/logrusorgru/aurora/v4"
 )
 
 var (
@@ -158,6 +159,51 @@ func piskaMessage(users []string) string {
 		}
 	}
 	return message
+}
+
+// Функция для генерирования сообщения с результатами "gayness"
+func gayMessage(m *discordgo.MessageCreate, users []string) string {
+	var message string
+	rand.Seed(time.Now().UnixNano())
+	message += "🏳️‍🌈🌈🏳️‍🌈" // Начало сообщения с радужной последовательностью
+
+	// Цикл по каждому пользователю для расчета "уровня гейства"
+	for _, user := range users {
+		gayProc := rand.Intn(101)
+		if gayProc == 0 {
+			message += fmt.Sprintf("\n%s, у тебя пока 0%% GaYства. Не сдавайся! 🥺", aurora.Gray(fmt.Sprintf("<@%s>", user)))
+		} else if gayProc == 100 {
+			messageText := fmt.Sprintf("\n%s, ты просто совершенство! 400%% GaYства! 🌈🏳️‍🌈✨", aurora.Rainbow(fmt.Sprintf("<@%s>", user)))
+			message += messageText
+			go animateReactions(m.ChannelID, messageText) // Анимируем реакции в горутине
+		} else if gayProc >= 50 {
+			message += fmt.Sprintf("\n%s, у тебя %d%% гейства! Держись, радужный воин! 💃✨", aurora.Cyan(fmt.Sprintf("<@%s>", user)), gayProc)
+		} else {
+			message += fmt.Sprintf("\n%s, у тебя %d%% гейства. Попробуй танцевать под Lady Gaga! 💃🎶", aurora.Yellow(fmt.Sprintf("<@%s>", user)), gayProc)
+		}
+	}
+
+	return message
+}
+
+// Функция для анимации радужных реакций
+func animateReactions(channelID string, messageText string) {
+	message, err := s.ChannelMessageSend(channelID, messageText) // Отправляем сообщение
+	if err != nil {
+		fmt.Println("Ошибка при отправке сообщения:", err)
+		return
+	}
+
+	// Больше эмодзи для анимации
+	emojis := []string{"🏳️‍🌈", "✨", "🌈", "🦄", "💖", "🌟"}
+	rand.Shuffle(len(emojis), func(i, j int) { emojis[i], emojis[j] = emojis[j], emojis[i] })
+
+	// Анимация с рандомным порядком эмодзи
+	for _, emoji := range emojis {
+		s.MessageReactionAdd(channelID, message.ID, emoji) // Добавляем реакцию
+		time.Sleep(time.Millisecond * 500)                // Пауза между эмодзи
+		s.MessageReactionRemove(channelID, message.ID, emoji) // Убираем реакцию
+	}
 }
 
 func main() {
@@ -635,6 +681,29 @@ func main() {
 			if err != nil {
 				fmt.Println("error sending message,", err)
 			}
+		}
+		
+		if strings.HasPrefix(strings.ToLower(m.Content), "!гей") { 
+    			users := []string{m.Author.ID} // Добавляем автора команды в список пользователей
+    			if len(m.Mentions) != 0 {
+        			//#nosec G404 -- This is a false positive
+        			if rand.Intn(10) == 0 {
+            			_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>, а может быть ты???!!!", users[0]), m.Reference())
+            				if err != nil {
+                			fmt.Println("error sending message,", err)
+            			}
+            			return
+        		}
+        	for _, mention := range m.Mentions {
+            		users = append(users, mention.ID) // Добавляем упомянутых пользователей
+        		}
+    		}
+
+    			message := gayMessage(m, users) // Генерируем сообщение с помощью функции gayMessage
+    				_, err := s.ChannelMessageSendReply(m.ChannelID, message, m.Reference())
+    					if err != nil {
+        				fmt.Println("error sending message:", err)
+    				}
 		}
 
 		if strings.HasPrefix(strings.ToLower(m.Content), "!письки") {
