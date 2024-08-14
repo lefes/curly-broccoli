@@ -7,6 +7,9 @@ import (
 	"os"
 	"strings"
 	"time"
+	"encoding/json"
+	"io/ioutil"
+	"sync"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
@@ -15,10 +18,49 @@ import (
 	"github.com/logrusorgru/aurora/v4"
 )
 
+type DeathCounter struct {
+    Count int `json:"count"`
+    mu    sync.Mutex
+}
+
+var deathCounter DeathCounter
+
 var (
 	Token   string = ""
 	counter        = 0
 )
+
+const counterFile = "death_counter.json"
+
+func (dc *DeathCounter) save() error {
+    dc.mu.Lock()
+    defer dc.mu.Unlock()
+    data, err := json.Marshal(dc)
+    if err != nil {
+        return err
+    }
+    return ioutil.WriteFile(counterFile, data, 0644)
+}
+
+func (dc *DeathCounter) load() error {
+    dc.mu.Lock()
+    defer dc.mu.Unlock()
+    data, err := ioutil.ReadFile(counterFile)
+    if err != nil {
+        if os.IsNotExist(err) {
+            return nil // File doesn't exist, start with 0
+        }
+        return err
+    }
+    return json.Unmarshal(data, dc)
+}
+
+func (dc *DeathCounter) increment() int {
+    dc.mu.Lock()
+    defer dc.mu.Unlock()
+    dc.Count++
+    return dc.Count
+}
 
 func poll(session *discordgo.Session, m *discordgo.MessageCreate) {
 	// Randomly create a poll with 3 options in the channel
@@ -161,6 +203,25 @@ func piskaMessage(users []string) string {
 	return message
 }
 
+// Функция для команды пенис
+func penisCommand(s *discordgo.Session, m *discordgo.MessageCreate) string {
+    size := rand.Intn(30) + 1
+    shaft := strings.Repeat("=", size)
+    penis := fmt.Sprintf("8%s>", shaft)
+
+    var message string
+    switch size {
+    case 1:
+        message = "Обладатель микроскопического стручка! Не грусти, бро, зато ты король клитора!"
+    case 30:
+        message = "Святые угодники! У тебя там баобаб вырос? Поздравляем, теперь ты главный калибр эскадры!"
+    default:
+        message = fmt.Sprintf("Размер: %d см", size)
+    }
+
+    return fmt.Sprintf("```\n%s\n```\n%s", penis, message)
+}
+
 // Функция для генерирования сообщения с результатами "gayness"
 func gayMessage(m *discordgo.MessageCreate, users []string) string {
 	var message string
@@ -213,6 +274,11 @@ func main() {
 		fmt.Println("error creating Discord session,", err)
 		return
 	}
+
+	// Чек файла на смерти
+	if err := deathCounter.load(); err != nil {
+        fmt.Println("Error loading death counter:", err)
+    }
 
 	// Create interface for quotes
 	quote := quotes.New()
@@ -463,12 +529,15 @@ func main() {
 
 		// Проверка, что сообщение от целевого пользователя и содержит слово "умер"
 		if m.Author.ID == "850043154207604736" && strings.Contains(strings.ToLower(m.Content), "умер") {
-			counter++
-			response := fmt.Sprintf("Сволочи, они убили @%s %d раз(а) 💀🔫", m.Author.Username, counter)
+			count := deathCounter.increment()
+			response := fmt.Sprintf("Сволочи, они убили @%s %d раз(а) 💀🔫", m.Author.Username, count)
 			_, err := s.ChannelMessageSend(m.ChannelID, response)
 			if err != nil {
 				fmt.Println("Ошибка отправки сообщения:", err)
 				return
+			}
+			if err := deathCounter.save(); err != nil {
+				fmt.Println("Ошибка сохранения счетчика смертей:", err)
 			}
 		}
 
@@ -558,6 +627,23 @@ func main() {
 				if err != nil {
 					fmt.Println("error reacting to message,", err)
 				}
+			}
+		}
+
+		// Checking on "писька" message
+		if strings.HasPrefix(strings.ToLower(m.Content), "!пенис") {
+			user := m.Author.ID
+			if len(m.Mentions) != 0 {
+				member, err := s.GuildMember(m.GuildID, m.Mentions[0].ID)
+				if err == nil {
+					user = member.User.ID
+				}
+			}
+		
+			response := penisCommand(s, m)
+			_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>\n%s", user, response), m.Reference())
+			if err != nil {
+				fmt.Println("error sending message,", err)
 			}
 		}
 
