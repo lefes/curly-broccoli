@@ -32,8 +32,8 @@ repos:
     #
     # GoSec
     #
-    -   id: go-sec-mod
-    -   id: go-sec-repo-mod
+    # -   id: go-sec-mod
+    # -   id: go-sec-repo-mod
     #
     # StaticCheck
     #

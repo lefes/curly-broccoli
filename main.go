@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"math/rand"
+	rand "math/rand/v2"
 	"os"
 	"strings"
 	"time"
@@ -129,8 +129,6 @@ func init() {
 			panic("You need to input the token.")
 		}
 	}
-	rand.Seed(time.Now().UnixNano())
-
 }
 
 func getNick(member *discordgo.Member) string {
@@ -142,11 +140,10 @@ func getNick(member *discordgo.Member) string {
 
 func piskaMessage(users []string) string {
 	var message string
-	rand.Seed(time.Now().UnixNano())
 	message += "🤔🤔🤔"
 	for _, user := range users {
 		// #nosec G404 -- This is a false positive
-		piskaProc := rand.Intn(101)
+		piskaProc := rand.IntN(101)
 		if piskaProc == 0 {
 			message += fmt.Sprintf("\nИзвини, <@%s>, но ты совсем не писька (0%%), приходи когда описюнеешь", user)
 		} else if piskaProc == 100 {
@@ -379,7 +376,6 @@ func main() {
 			}
 		}
 
-		
 		// Checking on COVEN event
 		if strings.Contains(strings.ToLower(m.Content), "ковен") || strings.Contains(strings.ToLower(m.Content), "сестры") || strings.Contains(strings.ToLower(m.Content), "сёстры") {
 			for _, v := range covenEmojis {
@@ -400,13 +396,13 @@ func main() {
 		}
 
 		// Checking on бобр message
-		if strings.Contains(strings.ToLower(m.Content), "бобр") || strings.Contains(strings.ToLower(m.Content), "бобер") || strings.Contains(strings.ToLower(m.Content) "курва" {
+		if strings.Contains(strings.ToLower(m.Content), "бобр") || strings.Contains(strings.ToLower(m.Content), "бобер") || strings.Contains(strings.ToLower(m.Content), "курва") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Kurwa bóbr. Ja pierdolę, Jakie bydlę jebane 🦫🦫🦫", m.Reference())
 			if err != nil {
 				fmt.Println("error sending message,", err)
 			}
 		}
-		
+
 		// Checking on "привет" message
 		if strings.Contains(strings.ToLower(m.Content), "привет") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Привет!", m.Reference())
@@ -545,7 +541,7 @@ func main() {
 			user := m.Author.ID
 			if len(m.Mentions) != 0 {
 				//#nosec G404 -- This is a false positive
-				if rand.Intn(10) == 0 {
+				if rand.IntN(10) == 0 {
 					_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>, кажется медведь прямо сейчас завалит тебя 🐻🐻🐻", user), m.Reference())
 					if err != nil {
 						fmt.Println("error sending message,", err)
@@ -559,7 +555,7 @@ func main() {
 			}
 
 			//#nosec G404 -- This is a false positive
-			medvedProc := rand.Intn(101)
+			medvedProc := rand.IntN(101)
 			_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>, завалишь медведя с %d%% вероятностью 🐻", user, medvedProc), m.Reference())
 			if err != nil {
 				fmt.Println("error sending message,", err)
@@ -569,7 +565,7 @@ func main() {
 		if strings.HasPrefix(strings.ToLower(m.Content), "!ролл") || strings.HasPrefix(strings.ToLower(m.Content), "!d20") {
 			user := m.Author.ID
 			//#nosec G404 -- This is a false positive
-			roll := rand.Intn(20) + 1
+			roll := rand.IntN(20) + 1
 			_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>, ты выкинул %d", user, roll), m.Reference())
 			if err != nil {
 				fmt.Println("error sending message,", err)
@@ -580,7 +576,7 @@ func main() {
 			user := m.Author.ID
 			if len(m.Mentions) != 0 {
 				//#nosec G404 -- This is a false positive
-				if rand.Intn(10) == 0 {
+				if rand.IntN(10) == 0 {
 					_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>, а вот и нет, писька это ты!!!", user), m.Reference())
 					if err != nil {
 						fmt.Println("error sending message,", err)
@@ -594,7 +590,7 @@ func main() {
 			}
 
 			//#nosec G404 -- This is a false positive
-			piskaProc := rand.Intn(101)
+			piskaProc := rand.IntN(101)
 
 			if piskaProc == 100 {
 				_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>, ты просто прекрасная писька на ВСЕ 100%%", user), m.Reference())
@@ -613,9 +609,9 @@ func main() {
 			}
 
 			//#nosec G404 -- This is a false positive
-			if rand.Intn(2) == 0 && piskaProc > 50 {
+			if rand.IntN(2) == 0 && piskaProc > 50 {
 				//#nosec G404 -- This is a false positive
-				_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s> настоящая писька на %d%%, вот тебе цитата: %s", user, piskaProc, quotesPublic[rand.Intn(len(quotesPublic))]), m.Reference())
+				_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s> настоящая писька на %d%%, вот тебе цитата: %s", user, piskaProc, quotesPublic[rand.IntN(len(quotesPublic))]), m.Reference())
 				if err != nil {
 					fmt.Println("error sending message,", err)
 				}
@@ -641,8 +637,8 @@ func main() {
 			user := m.Author.ID
 			users := make([]string, 0)
 			if len(m.Mentions) != 0 {
-				//#nosec G404 -- This is a false positive
-				if rand.Intn(10) == 0 {
+				// nosec G404 -- This is a false positive
+				if rand.IntN(10) == 0 {
 					_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>, а вот и нет, писька это ты!!!", user), m.Reference())
 					if err != nil {
 						fmt.Println("error sending message,", err)
@@ -711,7 +707,7 @@ func main() {
 
 		if strings.HasPrefix(strings.ToLower(m.Content), "!шар") {
 			//#nosec G404 -- This is a false positive
-			_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("Мой ответ: %s", magicBallMessages[rand.Intn(len(magicBallMessages))]), m.Reference())
+			_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("Мой ответ: %s", magicBallMessages[rand.IntN(len(magicBallMessages))]), m.Reference())
 			if err != nil {
 				fmt.Println("error sending message,", err)
 			}
