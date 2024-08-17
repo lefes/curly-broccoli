@@ -65,7 +65,6 @@ func startRace(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	// Инициализация трека
 	raceTrack := make(map[string]int)
 	for id := range raceParticipants {
 		raceTrack[id] = 0
@@ -206,7 +205,6 @@ func poll(session *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	reactions := []string{"1️⃣", "2️⃣", "3️⃣"}
-	// Add reactions to the poll
 
 	for _, v := range reactions {
 		err := session.MessageReactionAdd(pollMessage.ChannelID, pollMessage.ID, v)
@@ -244,7 +242,6 @@ func poll(session *discordgo.Session, m *discordgo.MessageCreate) {
 		winner = users[2]
 	}
 
-	// Congratulate the winner
 	_, err = session.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Поздравляем, <@%s>, ты сегодня писька! 🎉🎉🎉", winner.User.ID))
 	if err != nil {
 		fmt.Println("error congratulating the winner,", err)
@@ -291,8 +288,7 @@ func piskaMessage(users []string) string {
 	return message
 }
 
-// Функция для команды пенис
-func penisCommand(s *discordgo.Session, m *discordgo.MessageCreate) string {
+func penisCommand() string {
 	size := rand.IntN(30) + 1
 	shaft := strings.Repeat("=", size)
 	penis := fmt.Sprintf("8%s>", shaft)
@@ -311,48 +307,32 @@ func penisCommand(s *discordgo.Session, m *discordgo.MessageCreate) string {
 }
 
 func gayMessage(s *discordgo.Session, m *discordgo.MessageCreate, user string) {
-	var message strings.Builder
-	message.WriteString("\U0001F3F3\U0000FE0F\u200D\U0001F308\U0001F308\U0001F3F3\U0000FE0F\n")
+	var message string
+	message += "🏳️‍🌈🌈🏳️‍🌈\n"
 
 	gayProc := rand.IntN(101)
-	var result string
 
 	switch {
 	case gayProc == 0:
-		result = fmt.Sprintf("<@%s>, у тебя пока 0%% GaYства. Не сдавайся! 🥺", user)
+		message += fmt.Sprintf("<@%s>, у тебя пока 0%% GaYства. Не сдавайся! 🥺", user)
 	case gayProc == 100:
-		message.WriteString(strings.Repeat("🌈", 15))
-		result = fmt.Sprintf("<@%s>, ты просто совершенство! 400%% GaYства! %s", user, strings.Join([]string{"🌈", "✨", "🦄", "💖", "🌟"}, " "))
+		message += strings.Repeat("🌈", 15) + "\n"
+		message += fmt.Sprintf("<@%s>, ты просто совершенство! 400%% GaYства! %s", user, strings.Join([]string{"🌈", "✨", "🦄", "💖", "🌟"}, " "))
 	case gayProc >= 50:
-		message.WriteString(strings.Repeat("🌈", 10))
-		result = fmt.Sprintf("<@%s>, у тебя %d%% гейства! Держись, радужный воин! 💃✨", user, gayProc)
+		message += strings.Repeat("🌈", 10) + "\n"
+		message += fmt.Sprintf("<@%s>, у тебя %d%% гейства! Держись, радужный воин! 💃✨", user, gayProc)
 	default:
-		message.WriteString(strings.Repeat("🌈", 5))
-		result = fmt.Sprintf("<@%s>, у тебя %d%% гейства. Попробуй танцевать под Lady Gaga! 💃🎶", user, gayProc)
+		message += strings.Repeat("🌈", 5) + "\n"
+		message += fmt.Sprintf("<@%s>, у тебя %d%% гейства. Попробуй танцевать под Lady Gaga! 💃🎶", user, gayProc)
 	}
+	message += "\n" + strings.Repeat("🌈", 5) + "\n" + "🏳️‍🌈🌈🏳️‍🌈"
 
-	message.WriteString(result + "\n")
-
-	message.WriteString(strings.Repeat("\U0001F308", 10) + "\n" + "\U0001F3F3\U0000FE0F\u200D\U0001F308\U0001F308\U0001F3F3\U0000FE0F")
-
-	s.ChannelMessageSend(m.ChannelID, message.String())
+	s.ChannelMessageSend(m.ChannelID, message)
 
 	for _, emoji := range rainbowEmojis {
-		time.Sleep(200 * time.Millisecond)
 		s.MessageReactionAdd(m.ChannelID, m.ID, emoji)
 	}
 
-	if gayProc >= 50 {
-		animatedMessage := "🌈 "
-		for i := 0; i < 5; i++ {
-			animatedMessage += strings.Repeat("🌈", i+1)
-			_, err := s.ChannelMessageSend(m.ChannelID, animatedMessage)
-			if err != nil {
-				fmt.Println("error sending animated message:", err)
-			}
-			time.Sleep(300 * time.Millisecond)
-		}
-	}
 }
 
 func main() {
@@ -548,7 +528,7 @@ func main() {
 				}
 			}
 
-			response := penisCommand(s, m)
+			response := penisCommand()
 			_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>\n%s", user, response), m.Reference())
 			if err != nil {
 				fmt.Println("error sending message,", err)
