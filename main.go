@@ -384,7 +384,7 @@ func gayMessage(s *discordgo.Session, m *discordgo.MessageCreate, user string) {
 		rainbowCount = 5
 	}
 
-	messageContent := fmt.Sprintf(strings.Repeat("🌈", rainbowCount), "\n", result)
+	messageContent := fmt.Sprint(strings.Repeat("🌈", rainbowCount), "\n", result)
 
 	sentMessage, err := s.ChannelMessageSend(m.ChannelID, messageContent)
 	if err != nil {
@@ -392,7 +392,6 @@ func gayMessage(s *discordgo.Session, m *discordgo.MessageCreate, user string) {
 		return
 	}
 
-	// Добавляем эмодзи реакции в зависимости от процента гейства
 	var reactions []string
 	switch {
 	case gayProc == 0:
@@ -407,7 +406,6 @@ func gayMessage(s *discordgo.Session, m *discordgo.MessageCreate, user string) {
 		reactions = []string{"🌈"}
 	}
 
-	// Добавление реакций к сообщению
 	for _, emoji := range reactions {
 		err := s.MessageReactionAdd(m.ChannelID, sentMessage.ID, emoji)
 		if err != nil {
