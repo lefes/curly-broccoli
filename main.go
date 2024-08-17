@@ -384,10 +384,8 @@ func gayMessage(s *discordgo.Session, m *discordgo.MessageCreate, user string) {
 		rainbowCount = 5
 	}
 
-	// Формируем финальное сообщение
-	messageContent := fmt.Sprintf("🏳️‍🌈🌈🏳️‍🌈\n%s\n%s\n🌈🏳️‍🌈🌈🏳️‍🌈", strings.Repeat("🌈", rainbowCount), result)
+	messageContent := fmt.Sprintf(strings.Repeat("🌈", rainbowCount), "\n", result)
 
-	// Отправляем сообщение
 	sentMessage, err := s.ChannelMessageSend(m.ChannelID, messageContent)
 	if err != nil {
 		fmt.Println("error sending message:", err)
