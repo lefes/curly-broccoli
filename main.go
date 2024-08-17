@@ -58,16 +58,13 @@ func startRace(s *discordgo.Session, m *discordgo.MessageCreate) {
 	s.ChannelMessageSend(m.ChannelID, "Гонка начнется через 30 секунд! 🏁")
 	time.Sleep(30 * time.Second)
 
-	// Создаем дорожки для участников
 	raceTrack := make(map[string]int)
 	trackLength := 20
 
-	// Инициализируем позицию всех участников
 	for id := range raceParticipants {
 		raceTrack[id] = 0
 	}
 
-	// Отправляем начальное сообщение с дорожками
 	raceMessageContent := buildRaceMessage(raceTrack, raceParticipants, trackLength)
 	raceMessage, err := s.ChannelMessageSend(m.ChannelID, raceMessageContent)
 	if err != nil {
@@ -79,7 +76,6 @@ func startRace(s *discordgo.Session, m *discordgo.MessageCreate) {
 	for winner == "" {
 		time.Sleep(1 * time.Second)
 
-		// Обновляем позиции участников
 		for id := range raceParticipants {
 			raceTrack[id] += rand.IntN(3)
 			if raceTrack[id] >= trackLength {
@@ -89,7 +85,6 @@ func startRace(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 		}
 
-		// Обновляем сообщение гонки
 		updatedRaceMessageContent := buildRaceMessage(raceTrack, raceParticipants, trackLength)
 		_, err := s.ChannelMessageEdit(m.ChannelID, raceMessage.ID, updatedRaceMessageContent)
 		if err != nil {
@@ -98,7 +93,6 @@ func startRace(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 
-	// Объявляем победителя
 	winnerMessage := fmt.Sprintf("🎉 Победитель гонки: <@%s> %s! Поздравляем! 🎉", winner, raceParticipants[winner])
 	_, err = s.ChannelMessageSend(m.ChannelID, winnerMessage)
 	if err != nil {
@@ -109,13 +103,19 @@ func startRace(s *discordgo.Session, m *discordgo.MessageCreate) {
 	raceParticipants = make(map[string]string)
 }
 
-// Функция для формирования сообщения о ходе гонки
 func buildRaceMessage(raceTrack map[string]int, raceParticipants map[string]string, trackLength int) string {
 	raceMessage := "🏁 Гонка в процессе: 🏁\n\n"
+	longestName := 0
+
+	for name, _ := range raceParticipants {
+		if len(name) >= longestName {
+			longestName = len(name)
+		}
+	}
 
 	for id, emoji := range raceParticipants {
 		track := strings.Repeat("-", raceTrack[id]) + emoji + strings.Repeat("-", trackLength-raceTrack[id])
-		raceMessage += fmt.Sprintf("<@%s>: %s\n", id, track)
+		raceMessage += fmt.Sprintf("<@%s>: ", id) + strings.Repeat(" ", longestName-len(id)) + fmt.Sprintf("%s\n", track)
 	}
 
 	return raceMessage
@@ -329,8 +329,8 @@ func boobsCommand() string {
 	size := rand.IntN(21)
 
 	// Строим визуальное представление груди
-	leftBoob := "(" + strings.Repeat(" ", size/2) + "."
-	rightBoob := "." + strings.Repeat(" ", size/2) + ")"
+	leftBoob := "(" + strings.Repeat(" ", size/4) + "." + strings.Repeat(" ", size/4) + ")"
+	rightBoob := "(" + strings.Repeat(" ", size/4) + "." + strings.Repeat(" ", size/4) + ")"
 	boobs := leftBoob + " " + rightBoob
 
 	var message string
