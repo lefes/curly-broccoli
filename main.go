@@ -55,52 +55,70 @@ func startRace(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	initialMessage := "🏁 **Гонка начинается!** 🏁\n\n"
-	for id := range raceParticipants {
-		initialMessage += fmt.Sprintf("<@%s> %s на старте 🏎️💨\n", id, raceParticipants[id])
-	}
-	raceMessage, err := s.ChannelMessageSend(m.ChannelID, initialMessage)
-	if err != nil {
-		fmt.Println("error sending message:", err)
-		return
-	}
+	s.ChannelMessageSend(m.ChannelID, "Гонка начнется через 30 секунд! 🏁")
+	time.Sleep(30 * time.Second)
 
+	// Создаем дорожки для участников
 	raceTrack := make(map[string]int)
+	trackLength := 20
+
+	// Инициализируем позицию всех участников
 	for id := range raceParticipants {
 		raceTrack[id] = 0
 	}
 
-	// Запуск гонки
+	// Отправляем начальное сообщение с дорожками
+	raceMessageContent := buildRaceMessage(raceTrack, raceParticipants, trackLength)
+	raceMessage, err := s.ChannelMessageSend(m.ChannelID, raceMessageContent)
+	if err != nil {
+		fmt.Println("error sending race message:", err)
+		return
+	}
+
 	winner := ""
-	trackLength := 20
 	for winner == "" {
 		time.Sleep(1 * time.Second)
-		raceStatus := "```🏁 Гонка в процессе 🏁\n\n"
-		for id, emoji := range raceParticipants {
-			raceTrack[id] += rand.IntN(3)
+
+		// Обновляем позиции участников
+		for id := range raceParticipants {
+			raceTrack[id] += rand.Intn(3)
 			if raceTrack[id] >= trackLength {
 				raceTrack[id] = trackLength
 				winner = id
 				break
 			}
-			progress := strings.Repeat("—", raceTrack[id])
-			emptySpace := strings.Repeat("—", trackLength-raceTrack[id])
-			raceStatus += fmt.Sprintf("🚦 |%s%s%s|\n", progress, emoji, emptySpace)
 		}
-		raceStatus += "```"
 
-		_, err := s.ChannelMessageEdit(m.ChannelID, raceMessage.ID, raceStatus)
+		// Обновляем сообщение гонки
+		updatedRaceMessageContent := buildRaceMessage(raceTrack, raceParticipants, trackLength)
+		_, err := s.ChannelMessageEdit(m.ChannelID, raceMessage.ID, updatedRaceMessageContent)
 		if err != nil {
-			fmt.Println("error editing message:", err)
+			fmt.Println("error editing race message:", err)
 			return
 		}
 	}
 
-	finalMessage := fmt.Sprintf("🎉 **Победитель гонки:** <@%s> %s! Поздравляем! 🏆🎉", winner, raceParticipants[winner])
-	s.ChannelMessageSend(m.ChannelID, finalMessage)
+	// Объявляем победителя
+	winnerMessage := fmt.Sprintf("🎉 Победитель гонки: <@%s> %s! Поздравляем! 🎉", winner, raceParticipants[winner])
+	_, err = s.ChannelMessageSend(m.ChannelID, winnerMessage)
+	if err != nil {
+		fmt.Println("error sending winner message:", err)
+	}
 
 	raceInProgress = false
 	raceParticipants = make(map[string]string)
+}
+
+// Функция для формирования сообщения о ходе гонки
+func buildRaceMessage(raceTrack map[string]int, raceParticipants map[string]string, trackLength int) string {
+	raceMessage := "🏁 Гонка в процессе: 🏁\n\n"
+
+	for id, emoji := range raceParticipants {
+		track := strings.Repeat("-", raceTrack[id]) + emoji + strings.Repeat("-", trackLength-raceTrack[id])
+		raceMessage += fmt.Sprintf("<@%s>: %s\n", id, track)
+	}
+
+	return raceMessage
 }
 
 func handleBeerCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -306,33 +324,98 @@ func penisCommand() string {
 	return fmt.Sprintf("```\n%s\n```\n%s", penis, message)
 }
 
-func gayMessage(s *discordgo.Session, m *discordgo.MessageCreate, user string) {
-	var message string
-	message += "🏳️‍🌈🌈🏳️‍🌈\n"
+func boobsCommand() string {
+	// Генерируем размер груди от 0 до 20
+	size := rand.IntN(21)
 
-	gayProc := rand.IntN(101)
+	// Строим визуальное представление груди
+	leftBoob := "(" + strings.Repeat(" ", size/2) + "."
+	rightBoob := "." + strings.Repeat(" ", size/2) + ")"
+	boobs := leftBoob + " " + rightBoob
+
+	var message string
+	switch size {
+	case 0:
+		message = "Ноль? Не беда! Главное — душевная глубина."
+	case 20:
+		message = "Это не грудь, это просто обоюдоострый инструмент соблазна!"
+	case 1, 2:
+		message = "Ну, это почти незаметно, но всегда можно подсунуть носок!"
+	case 3, 4, 5:
+		message = "Мал да удал! Кто-то явно фанат японских аниме."
+	case 6, 7, 8:
+		message = "Пока что скромно, но всё впереди. Кстати, push-up никто не отменял!"
+	case 9, 10, 11:
+		message = "Средний размер — идеальный баланс! Завидую тому, кто будет с этим работать."
+	case 12, 13, 14:
+		message = "Ого, это уже что-то серьезное. Тебе точно нужно больше топов и меньше gravity."
+	case 15, 16, 17:
+		message = "Вот это да, пышные формы! С такой грудью можно смело идти на кастинг к Victoria's Secret."
+	case 18, 19:
+		message = "Невероятно! Это не просто размер — это целое событие! Скоро тебе нужен будет поддерживающий персонал."
+	default:
+		message = fmt.Sprintf("Размер: %d ", size)
+	}
+
+	return fmt.Sprintf("```\n%s\n```\n%s", boobs, message)
+}
+
+func gayMessage(s *discordgo.Session, m *discordgo.MessageCreate, user string) {
+	// Генерация процента гейства
+	gayProc := rand.Intn(101)
+	var result string
+	var rainbowCount int
 
 	switch {
 	case gayProc == 0:
-		message += fmt.Sprintf("<@%s>, у тебя пока 0%% GaYства. Не сдавайся! 🥺", user)
+		result = fmt.Sprintf("<@%s>, у тебя пока 0%% GaYства. Не сдавайся! 🥺", user)
+		rainbowCount = 1
 	case gayProc == 100:
-		message += strings.Repeat("🌈", 15) + "\n"
-		message += fmt.Sprintf("<@%s>, ты просто совершенство! 400%% GaYства! %s", user, strings.Join([]string{"🌈", "✨", "🦄", "💖", "🌟"}, " "))
-	case gayProc >= 50:
-		message += strings.Repeat("🌈", 10) + "\n"
-		message += fmt.Sprintf("<@%s>, у тебя %d%% гейства! Держись, радужный воин! 💃✨", user, gayProc)
+		result = fmt.Sprintf("<@%s>, ты просто совершенство! 400%% GaYства! 🌈✨🦄💖🌟", user)
+		rainbowCount = 20
+	case gayProc >= 61:
+		result = fmt.Sprintf("<@%s>, у тебя %d%% GaYства! Держись, радужный воин! 💃✨", user, gayProc)
+		rainbowCount = 15
+	case gayProc >= 21:
+		result = fmt.Sprintf("<@%s>, у тебя %d%% GaYства. Попробуй танцевать под Lady Gaga! 💃🎶", user, gayProc)
+		rainbowCount = 10
 	default:
-		message += strings.Repeat("🌈", 5) + "\n"
-		message += fmt.Sprintf("<@%s>, у тебя %d%% гейства. Попробуй танцевать под Lady Gaga! 💃🎶", user, gayProc)
-	}
-	message += "\n" + strings.Repeat("🌈", 5) + "\n" + "🏳️‍🌈🌈🏳️‍🌈"
-
-	s.ChannelMessageSend(m.ChannelID, message)
-
-	for _, emoji := range rainbowEmojis {
-		s.MessageReactionAdd(m.ChannelID, m.ID, emoji)
+		result = fmt.Sprintf("<@%s>, у тебя %d%% GaYства. Нужно больше блесток и радуг! ✨🌈", user, gayProc)
+		rainbowCount = 5
 	}
 
+	// Формируем финальное сообщение
+	messageContent := fmt.Sprintf("🏳️‍🌈🌈🏳️‍🌈\n%s\n%s\n🌈🏳️‍🌈🌈🏳️‍🌈", strings.Repeat("🌈", rainbowCount), result)
+
+	// Отправляем сообщение
+	sentMessage, err := s.ChannelMessageSend(m.ChannelID, messageContent)
+	if err != nil {
+		fmt.Println("error sending message:", err)
+		return
+	}
+
+	// Добавляем эмодзи реакции в зависимости от процента гейства
+	var reactions []string
+	switch {
+	case gayProc == 0:
+		reactions = []string{}
+	case gayProc == 100:
+		reactions = []string{"🌈", "✨", "🦄", "💖"}
+	case gayProc >= 61:
+		reactions = []string{"🌈", "✨", "🦄"}
+	case gayProc >= 21:
+		reactions = []string{"🌈", "✨"}
+	default:
+		reactions = []string{"🌈"}
+	}
+
+	// Добавление реакций к сообщению
+	for _, emoji := range reactions {
+		err := s.MessageReactionAdd(m.ChannelID, sentMessage.ID, emoji)
+		if err != nil {
+			fmt.Println("error adding reaction:", err)
+		}
+	}
 }
 
 func main() {
@@ -535,6 +618,23 @@ func main() {
 			}
 		}
 
+		if strings.HasPrefix(strings.ToLower(m.Content), "!бубс") {
+			// Выбираем пользователя: упомянутого или автора
+			user := m.Author.ID
+			if len(m.Mentions) != 0 {
+				member, err := s.GuildMember(m.GuildID, m.Mentions[0].ID)
+				if err == nil {
+					user = member.User.ID
+				}
+			}
+
+			response := boobsCommand()
+			_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>\n%s", user, response), m.Reference())
+			if err != nil {
+				fmt.Println("error sending message,", err)
+			}
+		}
+
 		if strings.Contains(strings.ToLower(m.Content), "полчаса") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "полчаса, полчаса - не вопрос. Не ответ полчаса, полчаса (c) Чайок", m.Reference())
 			if err != nil {
@@ -553,7 +653,7 @@ func main() {
 			}
 		}
 
-		if strings.Contains(strings.ToLower(m.Content), "!голосование") {
+		if strings.EqualFold(m.Content, "!голосование") {
 			go poll(s, m)
 		}
 
