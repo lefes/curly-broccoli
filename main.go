@@ -81,7 +81,7 @@ func startRace(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		// Обновляем позиции участников
 		for id := range raceParticipants {
-			raceTrack[id] += rand.Intn(3)
+			raceTrack[id] += rand.IntN(3)
 			if raceTrack[id] >= trackLength {
 				raceTrack[id] = trackLength
 				winner = id
@@ -362,7 +362,7 @@ func boobsCommand() string {
 
 func gayMessage(s *discordgo.Session, m *discordgo.MessageCreate, user string) {
 	// Генерация процента гейства
-	gayProc := rand.Intn(101)
+	gayProc := rand.IntN(101)
 	var result string
 	var rainbowCount int
 
