@@ -129,7 +129,7 @@ func handleBeerCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if amount == 20 {
 			successMessage = fmt.Sprintf("<@%s> выпил %d литров пива и остался жив?! 🎉🍻\n\n", m.Author.ID, amount)
 			s.ChannelMessageSend(m.ChannelID, successMessage)
-			s.ChannelMessageSend(m.ChannelID, "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExejN4bjU1cTc1NDRodXU1OGd1NTExNTZheXRwOTdkaHNycWwyMTdtZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/qiSGGu0d2Dgac/giphy.gif") // Замените ссылку на подходящий GIF
+			s.ChannelMessageSend(m.ChannelID, "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExejN4bjU1cTc1NDRodXU1OGd1NTExNTZheXRwOTdkaHNycWwyMTdtZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/qiSGGu0d2Dgac/giphy.gif")
 		} else {
 			successMessage = fmt.Sprintf("<@%s> успешно выпил %d литров пива! 🍺\n\n", m.Author.ID, amount)
 			s.ChannelMessageSend(m.ChannelID, successMessage)
@@ -139,7 +139,7 @@ func handleBeerCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if amount == 20 {
 			failureMessage = fmt.Sprintf("<@%s> не смог осилить %d литров пива и отправляется в бессознательное состояние на 5 минут! 🍺😴\n\n", m.Author.ID, amount)
 			s.ChannelMessageSend(m.ChannelID, failureMessage)
-			s.ChannelMessageSend(m.ChannelID, "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExd3Rqb3NycG0xZTRqNHZoamgybmVmOGRvYTcyamViNGJ6ZGM0YjA1MSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/7bx7ZHokGnofm/giphy-downsized-large.gif") // Замените ссылку на подходящий GIF
+			s.ChannelMessageSend(m.ChannelID, "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExd3Rqb3NycG0xZTRqNHZoamgybmVmOGRvYTcyamViNGJ6ZGM0YjA1MSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/7bx7ZHokGnofm/giphy-downsized-large.gif")
 		} else if amount >= 15 {
 			failureMessage = fmt.Sprintf("<@%s> не осилил %d литров пива. Похоже, ты не подготовился к настоящей пьянке. Спокойной ночи на 5 минут! 🍺😴\n\n", m.Author.ID, amount)
 			s.ChannelMessageSend(m.ChannelID, failureMessage)
