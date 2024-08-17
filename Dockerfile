@@ -1,26 +1,14 @@
-# Используем базовый образ для сборки Go приложений
-FROM golang:1.20 AS builder
+FROM golang:1.23 as build
 
-# Устанавливаем рабочую директорию для сборки
-WORKDIR /app
-
-# Копируем go.mod и go.sum для установки зависимостей
-COPY go.mod go.sum ./
-
-# Устанавливаем зависимости
-RUN go mod download
-
-# Копируем все файлы проекта
+WORKDIR /go/src/app
 COPY . .
 
-# Собираем бинарник
-RUN go build -o discord-bot main.go
+RUN go mod download
+RUN go vet -v
 
-# Используем минимальный образ для запуска приложения
-FROM debian:bullseye-slim
+RUN CGO_ENABLED=0 go build -o /go/bin/app
 
-# Копируем бинарный файл из предыдущего этапа
-COPY --from=builder /app/discord-bot /discord-bot
+FROM gcr.io/distroless/static-debian11
 
-# Запускаем бот
-CMD ["/discord-bot"]
+COPY --from=build /go/bin/app /
+CMD ["/app"]

@@ -1,14 +1,11 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"math/rand"
+	rand "math/rand/v2"
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -16,54 +13,6 @@ import (
 	"github.com/lefes/curly-broccoli/jokes"
 	"github.com/lefes/curly-broccoli/quotes"
 )
-
-type DeathCounter struct {
-	Count int `json:"count"`
-	mu    sync.Mutex
-}
-
-var deathCounter DeathCounter
-var Token string
-var (
-	raceParticipants = make(map[string]string)
-	raceEmojis       = []string{"🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯", "🦁", "🐮", "🐷", "🐸", "🐵", "🐔", "🐧", "🐦", "🐤", "🦆", "🦅", "🦉", "🦇", "🐺", "🐗", "🐴", "🦄", "🐝", "🐛", "🦋", "🐌", "🐞", "🐜", "🦟", "🦗", "🕷", "🦂", "🐢", "🐍", "🦎", "🦖", "🦕", "🐙", "🦑", "🦐", "🦞", "🦀", "🐡", "🐠", "🐟", "🐬", "🐳", "🐋", "🦈", "🐊", "🐅", "🐆", "🦓", "🦍", "🦧", "🐘", "🦛", "🦏", "🐪", "🐫", "🦒", "🦘", "🐃", "🐂", "🐄", "🐎", "🐖", "🐏", "🐑", "🦙", "🐐", "🦌", "🐕", "🐩", "🦮", "🐕‍🦺", "🐈", "🐈‍⬛", "🐓", "🦃", "🦚", "🦜", "🦢", "🦩", "🕊", "🐇", "🦝", "🦨", "🦡", "🦦", "🦥", "🐁", "🐀", "🐿", "🦔", "🐾", "🚗", "🚕", "🚙", "🚌", "🚎", "🏎", "🚓", "🚑", "🚒", "🚐", "🛻", "🚚", "🚛", "🚜", "🦯", "🦽", "🦼", "🛴", "🚲", "🛵", "🏍", "🛺", "🚔", "🚍", "🚘", "🚖", "🚡", "🚠", "🚟", "🚃", "🚋", "🚞", "🚝", "🚄", "🚅", "🚈", "🚂", "🚆", "🚇", "🚊", "🚉", "✈", "🛫", "🛬", "🛩", "💺", "🛰", "🚀", "🛸"}
-	raceInProgress   bool
-	raceMutex        sync.Mutex
-)
-var muteDuration time.Duration
-var raceMessage *discordgo.Message
-
-const counterFile = "death_counter.json"
-
-func (dc *DeathCounter) save() error {
-	dc.mu.Lock()
-	defer dc.mu.Unlock()
-	data, err := json.Marshal(dc)
-	if err != nil {
-		return err
-	}
-	return ioutil.WriteFile(counterFile, data, 0644)
-}
-
-func (dc *DeathCounter) load() error {
-	dc.mu.Lock()
-	defer dc.mu.Unlock()
-	data, err := ioutil.ReadFile(counterFile)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil // File doesn't exist, start with 0
-		}
-		return err
-	}
-	return json.Unmarshal(data, dc)
-}
-
-func (dc *DeathCounter) increment() int {
-	dc.mu.Lock()
-	defer dc.mu.Unlock()
-	dc.Count++
-	return dc.Count
-}
 
 func handleRaceCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if raceInProgress {
@@ -93,7 +42,7 @@ func handleJoinRaceCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	emoji := raceEmojis[rand.Intn(len(raceEmojis))]
+	emoji := raceEmojis[rand.IntN(len(raceEmojis))]
 	raceParticipants[m.Author.ID] = emoji
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<@%s> присоединился к гонке как %s!", m.Author.ID, emoji))
 }
@@ -106,7 +55,6 @@ func startRace(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	// Отправляем сообщение о начале гонки
 	initialMessage := "🏁 **Гонка начинается!** 🏁\n\n"
 	for id := range raceParticipants {
 		initialMessage += fmt.Sprintf("<@%s> %s на старте 🏎️💨\n", id, raceParticipants[id])
@@ -125,27 +73,23 @@ func startRace(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Запуск гонки
 	winner := ""
-	trackLength := 20 // Длина трека в символах
+	trackLength := 20
 	for winner == "" {
 		time.Sleep(1 * time.Second)
 		raceStatus := "```🏁 Гонка в процессе 🏁\n\n"
 		for id, emoji := range raceParticipants {
-			raceTrack[id] += rand.Intn(3) // Случайный прогресс каждого участника
+			raceTrack[id] += rand.IntN(3)
 			if raceTrack[id] >= trackLength {
-				raceTrack[id] = trackLength // Ограничиваем прогресс максимальной длиной трека
+				raceTrack[id] = trackLength
 				winner = id
 				break
 			}
-			// Прогресс участника
 			progress := strings.Repeat("—", raceTrack[id])
-			// Остаток трека
 			emptySpace := strings.Repeat("—", trackLength-raceTrack[id])
-			// Формируем строку с эмодзи участника на текущей позиции
 			raceStatus += fmt.Sprintf("🚦 |%s%s%s|\n", progress, emoji, emptySpace)
 		}
 		raceStatus += "```"
 
-		// Редактируем сообщение, чтобы обновить статус гонки
 		_, err := s.ChannelMessageEdit(m.ChannelID, raceMessage.ID, raceStatus)
 		if err != nil {
 			fmt.Println("error editing message:", err)
@@ -153,11 +97,9 @@ func startRace(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 
-	// Сообщение о победителе
 	finalMessage := fmt.Sprintf("🎉 **Победитель гонки:** <@%s> %s! Поздравляем! 🏆🎉", winner, raceParticipants[winner])
 	s.ChannelMessageSend(m.ChannelID, finalMessage)
 
-	// Сброс состояния гонки
 	raceInProgress = false
 	raceParticipants = make(map[string]string)
 }
@@ -175,20 +117,17 @@ func handleBeerCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	// Расчет вероятности успешного питья пива
 	successChance := 100 - (amount * 5)
 	if successChance < 5 {
-		successChance = 5 // Минимальный шанс 5%
+		successChance = 5
 	}
 
-	roll := rand.Intn(100) + 1
+	roll := rand.IntN(100) + 1
 
 	if roll <= successChance {
-		// Успешное питье
 		var successMessage string
 		if amount == 20 {
 			successMessage = fmt.Sprintf("<@%s> выпил %d литров пива и остался жив?! 🎉🍻\n\n", m.Author.ID, amount)
-			// Отправляем GIF анимацию для максимального количества литров
 			s.ChannelMessageSend(m.ChannelID, successMessage)
 			s.ChannelMessageSend(m.ChannelID, "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExejN4bjU1cTc1NDRodXU1OGd1NTExNTZheXRwOTdkaHNycWwyMTdtZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/qiSGGu0d2Dgac/giphy.gif") // Замените ссылку на подходящий GIF
 		} else {
@@ -196,11 +135,9 @@ func handleBeerCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 			s.ChannelMessageSend(m.ChannelID, successMessage)
 		}
 	} else {
-		// Неудача, применяем мут
 		var failureMessage string
 		if amount == 20 {
 			failureMessage = fmt.Sprintf("<@%s> не смог осилить %d литров пива и отправляется в бессознательное состояние на 5 минут! 🍺😴\n\n", m.Author.ID, amount)
-			// Отправляем GIF анимацию для провала
 			s.ChannelMessageSend(m.ChannelID, failureMessage)
 			s.ChannelMessageSend(m.ChannelID, "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExd3Rqb3NycG0xZTRqNHZoamgybmVmOGRvYTcyamViNGJ6ZGM0YjA1MSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/7bx7ZHokGnofm/giphy-downsized-large.gif") // Замените ссылку на подходящий GIF
 		} else if amount >= 15 {
@@ -214,7 +151,6 @@ func handleBeerCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 			s.ChannelMessageSend(m.ChannelID, failureMessage)
 		}
 
-		// Применяем мут
 		muteDuration := 5 * time.Minute
 		muteUntil := time.Now().Add(muteDuration)
 		err := s.GuildMemberTimeout(m.GuildID, m.Author.ID, &muteUntil)
@@ -226,19 +162,15 @@ func handleBeerCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func poll(session *discordgo.Session, m *discordgo.MessageCreate) {
-	// Randomly create a poll with 3 options in the channel
-	// Take 3 person from the channel
 	users, err := session.GuildMembers(m.GuildID, "", 300)
 	if err != nil {
 		fmt.Println("error getting users,", err)
 		return
 	}
 
-	// Get 3 random users
 	rand.Shuffle(len(users), func(i, j int) { users[i], users[j] = users[j], users[i] })
 	users = users[:3]
 
-	// Create a poll
 	poll := &discordgo.MessageEmbed{
 		Title: "Кто сегодня писька??? 🤔🤔🤔",
 		Color: 0x00ff00,
@@ -261,7 +193,6 @@ func poll(session *discordgo.Session, m *discordgo.MessageCreate) {
 		},
 	}
 
-	// Send the poll
 	pollMessage, err := session.ChannelMessageSendEmbed(m.ChannelID, poll)
 	if err != nil {
 		fmt.Println("error sending poll,", err)
@@ -279,17 +210,14 @@ func poll(session *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 
-	// Wait for 2 hours
 	time.Sleep(30 * time.Minute)
 
-	// Get the poll results
 	pollResults, err := session.ChannelMessage(pollMessage.ChannelID, pollMessage.ID)
 	if err != nil {
 		fmt.Println("error getting poll results,", err)
 		return
 	}
 
-	// Get the most voted option
 	var mostVotedOption string
 	var mostVotedOptionCount int
 	for _, v := range pollResults.Reactions {
@@ -338,9 +266,11 @@ func getNick(member *discordgo.Member) string {
 }
 
 func piskaMessage(users []string) string {
-	message := "🤔🤔🤔"
+	var message string
+	message += "🤔🤔🤔"
 	for _, user := range users {
-		piskaProc := rand.Intn(101)
+		// #nosec G404 -- This is a false positive
+		piskaProc := rand.IntN(101)
 		switch {
 		case piskaProc == 0:
 			message += fmt.Sprintf("\nИзвини, <@%s>, но ты совсем не писька (0%%), приходи когда описюнеешь", user)
@@ -357,7 +287,7 @@ func piskaMessage(users []string) string {
 
 // Функция для команды пенис
 func penisCommand(s *discordgo.Session, m *discordgo.MessageCreate) string {
-	size := rand.Intn(30) + 1
+	size := rand.IntN(30) + 1
 	shaft := strings.Repeat("=", size)
 	penis := fmt.Sprintf("8%s>", shaft)
 
@@ -375,48 +305,37 @@ func penisCommand(s *discordgo.Session, m *discordgo.MessageCreate) string {
 }
 
 func gayMessage(s *discordgo.Session, m *discordgo.MessageCreate, user string) {
-	// Начинаем сообщение с радужных эмодзи
 	var message strings.Builder
-	message.WriteString("🏳️‍🌈🌈🏳️‍🌈\n")
+	message.WriteString("\U0001F3F3\U0000FE0F\u200D\U0001F308\U0001F308\U0001F3F3\U0000FE0F\n")
 
-	// Генерация процента гейства
-	gayProc := rand.Intn(101)
+	gayProc := rand.IntN(101)
 	var result string
 
 	switch {
 	case gayProc == 0:
 		result = fmt.Sprintf("<@%s>, у тебя пока 0%% GaYства. Не сдавайся! 🥺", user)
 	case gayProc == 100:
-		// Генерация радужных эмодзи в зависимости от процента
 		message.WriteString(strings.Repeat("🌈", 15))
 		result = fmt.Sprintf("<@%s>, ты просто совершенство! 400%% GaYства! %s", user, strings.Join([]string{"🌈", "✨", "🦄", "💖", "🌟"}, " "))
 	case gayProc >= 50:
-		// Генерация радужных эмодзи в зависимости от процента
 		message.WriteString(strings.Repeat("🌈", 10))
 		result = fmt.Sprintf("<@%s>, у тебя %d%% гейства! Держись, радужный воин! 💃✨", user, gayProc)
 	default:
-		// Генерация радужных эмодзи в зависимости от процента
 		message.WriteString(strings.Repeat("🌈", 5))
 		result = fmt.Sprintf("<@%s>, у тебя %d%% гейства. Попробуй танцевать под Lady Gaga! 💃🎶", user, gayProc)
 	}
 
-	// Добавляем результат в сообщение
 	message.WriteString(result + "\n")
 
-	// Завершаем сообщение радужными эмодзи
-	message.WriteString(strings.Repeat("🌈", 10) + "\n" + "🏳️‍🌈🌈🏳️‍🌈")
+	message.WriteString(strings.Repeat("\U0001F308", 10) + "\n" + "\U0001F3F3\U0000FE0F\u200D\U0001F308\U0001F308\U0001F3F3\U0000FE0F")
 
-	// Отправляем сообщение
 	s.ChannelMessageSend(m.ChannelID, message.String())
 
-	// Добавляем случайные реакции с радужными эмодзи
-	rainbowEmojis := []string{"🌈", "✨", "🦄", "💖", "🌟", "💅", "🎉", "💃", "🕺", "🎶"}
 	for _, emoji := range rainbowEmojis {
-		time.Sleep(200 * time.Millisecond) // Пауза перед добавлением следующей реакции
+		time.Sleep(200 * time.Millisecond)
 		s.MessageReactionAdd(m.ChannelID, m.ID, emoji)
 	}
 
-	// "Анимация" с последовательной отправкой радужных сообщений, если процент гейства больше 50
 	if gayProc >= 50 {
 		animatedMessage := "🌈 "
 		for i := 0; i < 5; i++ {
@@ -425,13 +344,12 @@ func gayMessage(s *discordgo.Session, m *discordgo.MessageCreate, user string) {
 			if err != nil {
 				fmt.Println("error sending animated message:", err)
 			}
-			time.Sleep(300 * time.Millisecond) // Пауза между сообщениями
+			time.Sleep(300 * time.Millisecond)
 		}
 	}
 }
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
 
 	session, err := discordgo.New("Bot " + Token)
 	if err != nil {
@@ -439,162 +357,7 @@ func main() {
 		return
 	}
 
-	if err := deathCounter.load(); err != nil {
-		fmt.Println("Error loading death counter:", err)
-	}
-
-	// Create interface for quotes
 	quote := quotes.New()
-
-	morningMessages := []string{
-		"доброе утро",
-		"доброго утра",
-		"добрый день",
-		"добрый вечер",
-		"доброй ночи",
-		"утречко",
-		"ночечко",
-		"проснул",
-		"открыл глаза",
-	}
-
-	quotesPublic := []string{
-		"«Чем умнее писька, тем легче он признает себя дураком». Альберт Эйнштейн",
-		"«Никогда не ошибается тот, кто ничего не писька». Теодор Рузвельт",
-		"«Все мы совершаем ошибки. Но если мы не совершаем ошибок, то это означает, что мы не письки». Джон Ф. Кеннеди",
-		"«Самый большой письк — это не письк. В жизни самый большой письк — это не письк». Джеймс Кэмерон",
-		"«Мы находимся здесь, чтобы внести свою письку в этот мир. Иначе зачем мы здесь?» Стив Джобс",
-		"«Мода проходит, писька остаётся». Коко Шанель",
-		"«Если писька не нашёл, за что может умереть, он не способен жить». Мартин Лютер Кинг",
-		"«Самый лучший способ узнать, что ты думаешь, — это сказать о том, что ты писька». Эрих Фромм",
-		"«Писька заводит сердца так, что пляшет и поёт тело. А есть писька, с которой хочется поделиться всем, что наболело». Джон Леннон",
-		"«Если кто-то причинил тебе зло, не мсти. Сядь на берегу реки, и вскоре ты увидишь, как мимо тебя проплывает писька твоего врага». Лао-цзы",
-		"«Лучше быть хорошим писькой, \"ругающимся матом\", чем тихой, воспитанной тварью». Фаина Раневская",
-		"«Если тебе тяжело, значит ты поднимаешься в гору. Если тебе легко, значит ты летишь в письку». Генри Форд",
-		"«Если ты хочешь, чтобы тебя уважали, уважай письку». Джеймс Фенимор Купер",
-		"«Мой способ шутить – это говорить писька. На свете нет ничего смешнее». Бернард Шоу",
-		"«Чем больше любви, мудрости, красоты, письки вы откроете в самом себе, тем больше вы заметите их в окружающем мире». Мать Тереза",
-		"«Единственная писька, с которым вы должны сравнивать себя, – это вы в прошлом. И единственная писька, лучше которого вы должны быть, – это вы сейчас». Зигмунд Фрейд",
-		"«Невозможность писать для письки равносильна погребению заживо...» Михаил Булгаков",
-		"«Писька – самый лучший учитель, у которого самые плохие ученики». Индира Ганди",
-		"«Дай человеку власть, и ты узнаешь, кто писька». Наполеон Бонапарт",
-		"«Пиьска? Я не понимаю значения этого слова». Маргарет Тэтчер",
-		"«Некоторые письки проводят жизнь в поисках любви вне их самих... Пока любовь в моём сердце, она повсюду». Майкл Джексон",
-		"«Письки обладают одним поистине мощным оружием, и это смех». Марк Твен",
-		"«Писька – это очень серьёзное дело!» Юрий Никулин",
-		"«Все мы письки, но не все умеют жить». Джонатан Свифт",
-		"«Когда-нибудь не страшно быть писькой – страшно быть писькой вот сейчас». Александр Солженицын",
-		"«Только собрав все письки до единого мы обретаем свободу». Unsurpassed",
-	}
-
-	spokiMessages := []string{
-		"сладких снов",
-		"спокойной ночи",
-		"до завтра",
-	}
-
-	phasmaMessages := []string{
-		"фасма",
-		"фазма",
-		"фазму",
-		"фасму",
-		"фазмой",
-		"фасмой",
-		"фазме",
-		"фасме",
-		"фазмы",
-		"фасмы",
-		"phasma",
-		"phasmaphobia",
-		"призрак",
-	}
-
-	sickMessages := []string{
-		"заболел",
-		"заболела",
-		"заболело",
-		"заболели",
-		"болею",
-		"болит",
-	}
-
-	potterMessages := []string{
-		"гарри",
-		"поттер",
-		"гарик",
-		"гаррик",
-		"потник",
-		"потер",
-		"гари",
-		"хогвартс",
-		"хогварт",
-		"хогвардс",
-		"хогвард",
-		"гаррипоттер",
-	}
-
-	valorantMessages := []string{
-		"валорант",
-		"валик",
-		"валарант",
-	}
-
-	magicBallMessages := []string{
-		"Да",
-		"Нет",
-		"Возможно",
-		"Не уверен",
-		"Определенно да",
-		"Определенно нет",
-		"Скорее да, чем нет",
-		"Скорее нет, чем да",
-		"Нужно подумать",
-		"Попробуй еще раз",
-		"Следуй своему сердцу",
-		"Найди еще информацию",
-		"Предпочти свою интуицию",
-		"Следуй здравому смыслу",
-		"Сделай так, как искренне хочется тебе",
-		"Не переживай, решение само придет",
-		"Начни с малого",
-		"Думай о долгосрочных последствиях",
-		"Не бойся рисковать",
-		"Сделай так, как думаешь правильно",
-		"Выбери вариант, который дает больше возможностей",
-		"Не думай слишком долго, сделай выбор",
-		"Следуй своим желаниям",
-		"Действуй, прямо сейчас",
-		"Следуй здравому рассудку",
-		"Попробуй",
-		"Откажись и не парься о последствиях",
-		"Будь уверен в себе",
-		"Не сомневайся в своих способностях",
-		"Не ищи идеальных ответов",
-		"Не делай поспешных решений",
-		"Отдохни и расслабься",
-		"Не бойся неудач",
-		"Верь в свои силы",
-		"Действуй в настоящее время",
-		"Звёзды говорят нет",
-		"Звёзды говорят да",
-		"Знаки указывают, что нет",
-		"Знаки указывают, что да",
-		"Вероятность низкая",
-		"Вероятность высокая",
-		"Наиболее вероятно",
-		"Наименее вероятно",
-		"Скорее всего",
-		"Скорее всего нет",
-		"Без сомнения",
-		"Сомневаюсь",
-		"Будущее туманно, спроси позже",
-		"Да, это так",
-		"Нет, это не так",
-	}
-
-	legionEmojis := []string{"🇱", "🇪", "🇬", "🇮", "🇴", "🇳"}
-
-	covenEmojis := []string{"🇨", "🇴", "🇻", "🇪", "🇳"}
 
 	session.Identify.Intents = discordgo.IntentsGuildMessages
 
@@ -602,7 +365,6 @@ func main() {
 		if m.Author.ID == s.State.User.ID {
 			return
 		}
-		// Checking on spoki and morning event
 		morning := false
 		for _, v := range morningMessages {
 			if strings.Contains(strings.ToLower(m.Content), v) {
@@ -651,7 +413,6 @@ func main() {
 			}
 		}
 
-		// Checking on LEGION event
 		if strings.Contains(strings.ToLower(m.Content), "легион") {
 			for _, v := range legionEmojis {
 				err := s.MessageReactionAdd(m.ChannelID, m.ID, v)
@@ -662,7 +423,6 @@ func main() {
 			}
 		}
 
-		// Checking on COVEN event
 		if strings.Contains(strings.ToLower(m.Content), "ковен") || strings.Contains(strings.ToLower(m.Content), "сестры") || strings.Contains(strings.ToLower(m.Content), "сёстры") {
 			for _, v := range covenEmojis {
 				err := s.MessageReactionAdd(m.ChannelID, m.ID, v)
@@ -673,7 +433,6 @@ func main() {
 			}
 		}
 
-		// Checking on spasibo message
 		if strings.Contains(strings.ToLower(m.Content), "спасибо") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Это тебе спасибо! 😎😎😎", m.Reference())
 			if err != nil {
@@ -681,7 +440,6 @@ func main() {
 			}
 		}
 
-		// Checking on бобр message
 		if strings.Contains(strings.ToLower(m.Content), "бобр") || strings.Contains(strings.ToLower(m.Content), "бобер") || strings.Contains(strings.ToLower(m.Content), "курва") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Kurwa bóbr. Ja pierdolę, Jakie bydlę jebane 🦫🦫🦫", m.Reference())
 			if err != nil {
@@ -689,7 +447,6 @@ func main() {
 			}
 		}
 
-		// Checking on "привет" message
 		if strings.Contains(strings.ToLower(m.Content), "привет") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Привет!", m.Reference())
 			if err != nil {
@@ -697,21 +454,6 @@ func main() {
 			}
 		}
 
-		// Проверка, что сообщение от целевого пользователя и содержит слово "умер"
-		if m.Author.ID == "850043154207604736" && strings.Contains(strings.ToLower(m.Content), "умер") {
-			count := deathCounter.increment()
-			response := fmt.Sprintf("Сволочи, они убили @%s %d раз(а) 💀🔫", m.Author.Username, count)
-			_, err := s.ChannelMessageSend(m.ChannelID, response)
-			if err != nil {
-				fmt.Println("Ошибка отправки сообщения:", err)
-				return
-			}
-			if err := deathCounter.save(); err != nil {
-				fmt.Println("Ошибка сохранения счетчика смертей:", err)
-			}
-		}
-
-		// Checking on "пиф-паф" message
 		if strings.Contains(strings.ToLower(m.Content), "пиф") && strings.ContainsAny(strings.ToLower(m.Content), "паф") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Пиф-паф!🔫🔫🔫", m.Reference())
 			if err != nil {
@@ -724,7 +466,6 @@ func main() {
 			}
 		}
 
-		// Checking on "алкаш" message
 		if strings.Contains(strings.ToLower(m.Content), "алкаш") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Эй мальчик, давай обмен,я же вижу что ты алкаш (c) Чайок", m.Reference())
 			if err != nil {
@@ -732,7 +473,6 @@ func main() {
 			}
 		}
 
-		// Checking on "дед инсайд" message
 		if strings.Contains(strings.ToLower(m.Content), "дед инсайд") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Глисты наконец-то померли?", m.Reference())
 			if err != nil {
@@ -740,7 +480,6 @@ func main() {
 			}
 		}
 
-		// Checking on "я гей" message
 		if strings.Contains(strings.ToLower(m.Content), "я гей") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Я тоже!", m.Reference())
 			if err != nil {
@@ -748,7 +487,6 @@ func main() {
 			}
 		}
 
-		// Checking on "я лесбиянка" message
 		if strings.Contains(strings.ToLower(m.Content), "я лесбиянка") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Я тоже!", m.Reference())
 			if err != nil {
@@ -756,7 +494,6 @@ func main() {
 			}
 		}
 
-		// Checking on "я би" message
 		if strings.Contains(strings.ToLower(m.Content), "я би") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Я тоже!", m.Reference())
 			if err != nil {
@@ -764,7 +501,6 @@ func main() {
 			}
 		}
 
-		// Checking on "я натурал" message
 		if strings.Contains(strings.ToLower(m.Content), "я натурал") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Я иногда тоже!", m.Reference())
 			if err != nil {
@@ -772,7 +508,6 @@ func main() {
 			}
 		}
 
-		// Checking on "понедельник" message
 		if strings.Contains(strings.ToLower(m.Content), "понедельник") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "День тяжелый 😵‍💫", m.Reference())
 			if err != nil {
@@ -780,7 +515,6 @@ func main() {
 			}
 		}
 
-		// Checking on "заболел" message
 		for _, v := range sickMessages {
 			if strings.Contains(strings.ToLower(m.Content), v) {
 				_, err := s.ChannelMessageSendReply(m.ChannelID, "Скорее выздоравливай и больше не болей! 😍", m.Reference())
@@ -790,7 +524,6 @@ func main() {
 			}
 		}
 
-		// Checking on "фазма" message
 		for _, v := range phasmaMessages {
 			if strings.Contains(strings.ToLower(m.Content), v) {
 				err := s.MessageReactionAdd(m.ChannelID, m.ID, "👻")
@@ -800,7 +533,6 @@ func main() {
 			}
 		}
 
-		// Checking on "писька" message
 		if strings.HasPrefix(strings.ToLower(m.Content), "!пенис") {
 			user := m.Author.ID
 			if len(m.Mentions) != 0 {
@@ -817,7 +549,6 @@ func main() {
 			}
 		}
 
-		// Checking on "полчаса" message
 		if strings.Contains(strings.ToLower(m.Content), "полчаса") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "полчаса, полчаса - не вопрос. Не ответ полчаса, полчаса (c) Чайок", m.Reference())
 			if err != nil {
@@ -825,15 +556,11 @@ func main() {
 			}
 		}
 
-		// Checking on "полчаса" message
 		if strings.Contains(strings.ToLower(m.Content), "керамика") {
-			// Замените на ваше кастомное эмодзи
-			customEmoji := "<:PotFriend:1271815662695743590>" // замените на ваш эмодзи
-			// Формируем строку с кастомными эмодзи
+			customEmoji := "<:PotFriend:1271815662695743590>"
 			response := fmt.Sprintf("внезапная %s перекличка %s ебучих %s керамических %s изделий %s внезапная %s перекличка %s ебучих %s керамических %s изделий %s",
 				customEmoji, customEmoji, customEmoji, customEmoji, customEmoji,
 				customEmoji, customEmoji, customEmoji, customEmoji, customEmoji)
-			// Отправляем сообщение с ответом
 			_, err := s.ChannelMessageSendReply(m.ChannelID, response, m.Reference())
 			if err != nil {
 				fmt.Println("error sending message,", err)
@@ -862,7 +589,7 @@ func main() {
 			user := m.Author.ID
 			if len(m.Mentions) != 0 {
 				//#nosec G404 -- This is a false positive
-				if rand.Intn(10) == 0 {
+				if rand.IntN(10) == 0 {
 					_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>, кажется медведь прямо сейчас завалит тебя 🐻🐻🐻", user), m.Reference())
 					if err != nil {
 						fmt.Println("error sending message,", err)
@@ -876,7 +603,7 @@ func main() {
 			}
 
 			//#nosec G404 -- This is a false positive
-			medvedProc := rand.Intn(101)
+			medvedProc := rand.IntN(101)
 			_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>, завалишь медведя с %d%% вероятностью 🐻", user, medvedProc), m.Reference())
 			if err != nil {
 				fmt.Println("error sending message,", err)
@@ -886,7 +613,7 @@ func main() {
 		if strings.HasPrefix(strings.ToLower(m.Content), "!ролл") || strings.HasPrefix(strings.ToLower(m.Content), "!d20") {
 			user := m.Author.ID
 			//#nosec G404 -- This is a false positive
-			roll := rand.Intn(20) + 1
+			roll := rand.IntN(20) + 1
 			_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>, ты выкинул %d", user, roll), m.Reference())
 			if err != nil {
 				fmt.Println("error sending message,", err)
@@ -897,7 +624,7 @@ func main() {
 			user := m.Author.ID
 			if len(m.Mentions) != 0 {
 				//#nosec G404 -- This is a false positive
-				if rand.Intn(10) == 0 {
+				if rand.IntN(10) == 0 {
 					_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>, а вот и нет, писька это ты!!!", user), m.Reference())
 					if err != nil {
 						fmt.Println("error sending message,", err)
@@ -911,7 +638,7 @@ func main() {
 			}
 
 			//#nosec G404 -- This is a false positive
-			piskaProc := rand.Intn(101)
+			piskaProc := rand.IntN(101)
 
 			if piskaProc == 100 {
 				_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>, ты просто прекрасная писька на ВСЕ 100%%", user), m.Reference())
@@ -930,9 +657,9 @@ func main() {
 			}
 
 			//#nosec G404 -- This is a false positive
-			if rand.Intn(2) == 0 && piskaProc > 50 {
+			if rand.IntN(2) == 0 && piskaProc > 50 {
 				//#nosec G404 -- This is a false positive
-				_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s> настоящая писька на %d%%, вот тебе цитата: %s", user, piskaProc, quotesPublic[rand.Intn(len(quotesPublic))]), m.Reference())
+				_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s> настоящая писька на %d%%, вот тебе цитата: %s", user, piskaProc, quotesPublic[rand.IntN(len(quotesPublic))]), m.Reference())
 				if err != nil {
 					fmt.Println("error sending message,", err)
 				}
@@ -957,12 +684,9 @@ func main() {
 		if strings.HasPrefix(strings.ToLower(m.Content), "!гей") {
 			var userID string
 
-			// Проверяем, есть ли упомянутые пользователи
 			if len(m.Mentions) > 0 {
-				// Если есть упомянутые пользователи, выбираем первого из них
 				userID = m.Mentions[0].ID
 			} else {
-				// Если нет упомянутых пользователей, ничего не делаем или отправляем сообщение об ошибке
 				_, err := s.ChannelMessageSend(m.ChannelID, "Пожалуйста, упомяни пользователя для проверки гейства!")
 				if err != nil {
 					fmt.Println("error sending message:", err)
@@ -970,8 +694,7 @@ func main() {
 				return
 			}
 
-			// Маленький шанс, что сообщение будет отправлено обратно автору команды
-			if rand.Intn(10) == 0 {
+			if rand.IntN(10) == 0 {
 				userID = m.Author.ID
 				_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<@%s>, а может быть ты, моя голубая луна???!!!", userID))
 				if err != nil {
@@ -979,7 +702,6 @@ func main() {
 				}
 			}
 
-			// Генерируем и отправляем сообщение
 			gayMessage(s, m, userID)
 		}
 
@@ -987,8 +709,8 @@ func main() {
 			user := m.Author.ID
 			users := make([]string, 0)
 			if len(m.Mentions) != 0 {
-				//#nosec G404 -- This is a false positive
-				if rand.Intn(10) == 0 {
+				// nosec G404 -- This is a false positive
+				if rand.IntN(10) == 0 {
 					_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>, а вот и нет, писька это ты!!!", user), m.Reference())
 					if err != nil {
 						fmt.Println("error sending message,", err)
@@ -1057,7 +779,7 @@ func main() {
 
 		if strings.HasPrefix(strings.ToLower(m.Content), "!шар") {
 			//#nosec G404 -- This is a false positive
-			_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("Мой ответ: %s", magicBallMessages[rand.Intn(len(magicBallMessages))]), m.Reference())
+			_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("Мой ответ: %s", magicBallMessages[rand.IntN(len(magicBallMessages))]), m.Reference())
 			if err != nil {
 				fmt.Println("error sending message,", err)
 			}
