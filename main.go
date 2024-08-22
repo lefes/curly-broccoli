@@ -135,7 +135,7 @@ func handleBeerCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	chance := 100 - (amount * 3)
-	roll := rand.IntN(100) + 1
+	roll := rand.IntN(130) + 1
 
 	successMessages := []string{
 		fmt.Sprintf("<@%s> смог осилить %d литров пива! 🍺", m.Author.ID, amount),
@@ -177,33 +177,6 @@ func handleBeerCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		muteDuration := getMuteDuration(amount)
 		muteUntil := time.Now().Add(muteDuration)
 
-		member, err := s.GuildMember(m.GuildID, m.Author.ID)
-		if err != nil {
-			fmt.Println("Error fetching member:", err)
-			return
-		}
-
-		adminRoleID := "" // ID роли администратора
-		for _, roleID := range member.Roles {
-			role, err := s.State.Role(m.GuildID, roleID)
-			if err != nil {
-				continue
-			}
-			if role.Permissions&discordgo.PermissionAdministrator != 0 {
-				adminRoleID = roleID
-				break
-			}
-		}
-
-		if adminRoleID != "" {
-			// Удаляем роль администратора
-			err := s.GuildMemberRoleRemove(m.GuildID, m.Author.ID, adminRoleID)
-			if err != nil {
-				fmt.Println("Error removing admin role:", err)
-				return
-			}
-		}
-
 		err = s.GuildMemberTimeout(m.GuildID, m.Author.ID, &muteUntil)
 		if err != nil {
 			fmt.Println("Error muting member:", err)
@@ -216,29 +189,21 @@ func handleBeerCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 			gif := gifs[rand.IntN(len(gifs))]
 			s.ChannelMessageSend(m.ChannelID, gif)
 		}
-
-		if adminRoleID != "" {
-			// Возвращаем роль администратора после окончания тайм-аута
-			time.AfterFunc(muteDuration, func() {
-				err := s.GuildMemberRoleAdd(m.GuildID, m.Author.ID, adminRoleID)
-				if err != nil {
-					fmt.Println("Error restoring admin role:", err)
-				}
-			})
-		}
 	}
 }
 
 func getMuteDuration(amount int) time.Duration {
 	switch {
+	case amount >= 40:
+		return time.Duration(10 * time.Minute)
 	case amount >= 30:
-		return time.Duration(amount*2) * time.Minute
+		return time.Duration(5 * time.Minute)
 	case amount >= 20:
-		return time.Duration(amount*1.5) * time.Minute
+		return time.Duration(3 * time.Minute)
 	case amount >= 10:
-		return time.Duration(amount) * time.Minute
+		return time.Duration(2 * time.Minute)
 	default:
-		return time.Duration(amount*0.5) * time.Minute
+		return time.Duration(1 * time.Minute)
 	}
 }
 
