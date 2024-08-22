@@ -180,7 +180,6 @@ func handleBeerCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		err = s.GuildMemberTimeout(m.GuildID, m.Author.ID, &muteUntil)
 		if err != nil {
 			fmt.Println("Error muting member:", err)
-			return
 		}
 
 		s.ChannelMessageSend(m.ChannelID, failureMessage)
