@@ -147,16 +147,16 @@ func handleBeerCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	failureMessages := []string{
 		fmt.Sprintf("<@%s> не смог осилить %d литров пива и облевал весь пол! Кто это убирать будет?! 🤢🤮", m.Author.ID, amount),
 		fmt.Sprintf("<@%s> попытался выпить %d литров, но потерпел неудачу и свалился под стол! 😵", m.Author.ID, amount),
-		fmt.Sprintf("<@%s> проиграл борьбу с %d литрами пива и отправляется в бан на %s минут! 😴", m.Author.ID, amount, getMuteDuration(amount)),
+		fmt.Sprintf("<@%s> проиграл борьбу с %d литрами пива и отправляется в бан на %s! 😴", m.Author.ID, amount, getMuteDuration(amount)),
 		fmt.Sprintf("<@%s> взял на себя слишком много! %d литров пива оказались выше его сил! 🥴", m.Author.ID, amount),
 		fmt.Sprintf("<@%s> был слишком уверен в себе и перепил. %d литров — не шутка! 🤢", m.Author.ID, amount),
 		fmt.Sprintf("<@%s> свалился под весом %d литров пива и отправляется в тайм-аут! 😵", m.Author.ID, amount),
 	}
 
 	gifs := []string{
-		"https://media.giphy.com/media/26FPGtbsG4COBRQ92/giphy.gif",
-		"https://media.giphy.com/media/3oz8xRk4XnKlrd8Kuk/giphy.gif",
-		"https://media.giphy.com/media/l41Ydcrqha4rPLXpu/giphy.gif",
+		"https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExZGt0bGtuZHphOTg1bHo2b3BwYW5sZG00Y3U1MHN6amY5aGl2aDdodSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/lTGLOH7ml3poQ6JoFg/giphy.gif",
+		"https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExYzJpaTcxZTYzeW1zN3Jhc2VxbjR0YndqZWVjb3Btb3AxZzJuZDk0aSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/yB9T6y9k1GQSkZZp9v/giphy.gif",
+		"https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExYWw5NXNyaDQ0Ymh0ejg5NzgzY3Y2cm5ndXllaHVpdTJrZ2tiYmFwaSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/xQG0wbo9A3WHC/giphy-downsized-large.gif",
 	}
 
 	if roll <= chance {
