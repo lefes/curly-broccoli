@@ -194,15 +194,15 @@ func handleBeerCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 func getMuteDuration(amount int) time.Duration {
 	switch {
 	case amount >= 40:
-		return time.Duration(10 * time.Minute)
+		return 10 * time.Minute
 	case amount >= 30:
-		return time.Duration(5 * time.Minute)
+		return 5 * time.Minute
 	case amount >= 20:
-		return time.Duration(3 * time.Minute)
+		return 3 * time.Minute
 	case amount >= 10:
-		return time.Duration(2 * time.Minute)
+		return 2 * time.Minute
 	default:
-		return time.Duration(1 * time.Minute)
+		return 1 * time.Minute
 	}
 }
 
