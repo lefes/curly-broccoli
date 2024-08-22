@@ -467,11 +467,11 @@ func main() {
 			}
 		}
 
-		if strings.EqualFold(m.Content, "!гонка") {
+		if m.Content == "!гонка" {
 			handleRaceCommand(s, m)
-		} else if strings.EqualFold(m.Content, "!го") {
+		} else if m.Content == "!го" {
 			handleJoinRaceCommand(s, m)
-		} else if strings.EqualFold(m.Content, "!пиво") {
+		} else if strings.HasPrefix(m.Content, "!пиво") {
 			handleBeerCommand(s, m)
 		}
 
@@ -672,7 +672,7 @@ func main() {
 			}
 		}
 
-		if strings.EqualFold(m.Content, "!голосование") {
+		if m.Content == "!голосование" {
 			go poll(s, m)
 		}
 
