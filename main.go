@@ -136,7 +136,7 @@ func handleBeerCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	chance := (amount * 3)
 	roll := rand.IntN(120) + 1
-	fmt.Printf("Roll: %d, Chance: %d\n by user %s", roll, chance, m.Author.Username)
+	fmt.Printf("Date: %s, Author: %s, Amount: %d, Chance: %d, Roll: %d\n", time.Now().Format("2006-01-02 15:04:05"), m.Author.Username, amount, chance, roll)
 
 	successMessages := []string{
 		fmt.Sprintf("<@%s> смог осилить %d литров пива! 🍺", m.Author.ID, amount),
