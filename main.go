@@ -180,7 +180,12 @@ func handleBeerCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		s.ChannelMessageSend(m.ChannelID, successMessage)
 
 		if amount == 40 {
-			s.ChannelMessageSend(m.ChannelID, "Невероятно! 40 литров! Ты, наверное, из пивного королевства! 🍻👑")
+			s.ChannelMessageSend(m.ChannelID, "https://media.giphy.com/media/gPbhyNB9Vpde0/giphy.gif?cid=790b7611u68bncsm51wuk8e8whzjalqm9r0gi2mpqxaiqpr3&ep=v1_gifs_search&rid=giphy.gif&ct=g")
+			time.Sleep(1 * time.Second)
+			s.ChannelMessageSend(m.ChannelID, "Невероятно!!!!!! 40 литров!!!!!!!! Ты, наверное, из пивного королевства! 🍻👑")
+			time.Sleep(5 * time.Second)
+			s.ChannelMessageSend(m.ChannelID, "https://media.giphy.com/media/Zw3oBUuOlDJ3W/giphy.gif?cid=790b7611rwi3azyed54indak41tqabn2pga0fbqr5da2z44d&ep=v1_gifs_search&rid=giphy.gif&ct=g")
+			return
 		}
 
 		if rand.IntN(100) < 50 { // 50% шанс показать GIF
