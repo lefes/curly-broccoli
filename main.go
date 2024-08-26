@@ -134,14 +134,17 @@ func handleBeerCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	chance := 100 - (amount * 3)
-	roll := rand.IntN(130) + 1
+	chance := (amount * 3)
+	roll := rand.IntN(120) + 1
 
 	successMessages := []string{
 		fmt.Sprintf("<@%s> смог осилить %d литров пива! 🍺", m.Author.ID, amount),
 		fmt.Sprintf("<@%s> успешно справился с %d литрами! Это достойно уважения! 🍻", m.Author.ID, amount),
 		fmt.Sprintf("<@%s> выпил %d литров, пивной монстр на свободе! 🍻🦹", m.Author.ID, amount),
 		fmt.Sprintf("<@%s> залпом поглотил %d литров и выглядит, как чемпион! 🏆", m.Author.ID, amount),
+		fmt.Sprintf("<@%s> выпил %d литров пива и готов к новым свершениям! 🍻🚀", m.Author.ID, amount),
+		fmt.Sprintf("<@%s> справился с %d литрами пива! Не плохо! 🍺", m.Author.ID, amount),
+		fmt.Sprintf("<@%s> выпил %d литров пива и готов к новым подвигам! 🍻🚀", m.Author.ID, amount),
 	}
 
 	failureMessages := []string{
@@ -151,15 +154,24 @@ func handleBeerCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		fmt.Sprintf("<@%s> взял на себя слишком много! %d литров пива оказались выше его сил! 🥴", m.Author.ID, amount),
 		fmt.Sprintf("<@%s> был слишком уверен в себе и перепил. %d литров — не шутка! 🤢", m.Author.ID, amount),
 		fmt.Sprintf("<@%s> свалился под весом %d литров пива и отправляется в тайм-аут! 😵", m.Author.ID, amount),
+		fmt.Sprintf("<@%s> не смог осилить %d литров пива и отправляется в бан на %s! 😴", m.Author.ID, amount, getMuteDuration(amount)),
 	}
 
 	gifs := []string{
 		"https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExZGt0bGtuZHphOTg1bHo2b3BwYW5sZG00Y3U1MHN6amY5aGl2aDdodSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/lTGLOH7ml3poQ6JoFg/giphy.gif",
 		"https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExYzJpaTcxZTYzeW1zN3Jhc2VxbjR0YndqZWVjb3Btb3AxZzJuZDk0aSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/yB9T6y9k1GQSkZZp9v/giphy.gif",
 		"https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExYWw5NXNyaDQ0Ymh0ejg5NzgzY3Y2cm5ndXllaHVpdTJrZ2tiYmFwaSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/xQG0wbo9A3WHC/giphy-downsized-large.gif",
+		"https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExMjd2ZTVsZmtvd2F2aTR1ZXJ5ZG5yM2EybzV5OWltMmJzdWttcWsxMyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/YooCD0Y2fw1C6VFBwl/giphy.gif",
+		"https://media.giphy.com/media/26tP21xUQnOCIIoFi/giphy.gif?cid=790b7611iyvxpdr8q647v1zbgay9muul2t1u1y0vjyzm4fg8&ep=v1_gifs_search&rid=giphy.gif&ct=g",
+		"https://giphy.com/embed/K7YSA2S4Ajq1pqcKVJ",
+		"https://media.giphy.com/media/6S9cWuMVtjfPz1GYqK/giphy.gif?cid=ecf05e47f7cas4uugmw9k7whhb5fx06n7zlpzwwgcjw482n4&ep=v1_gifs_search&rid=giphy.gif&ct=g",
+		"https://media.giphy.com/media/zrj0yPfw3kGTS/giphy.gif?cid=ecf05e47f7cas4uugmw9k7whhb5fx06n7zlpzwwgcjw482n4&ep=v1_gifs_search&rid=giphy.gif&ct=g",
+		"https://media.giphy.com/media/2CvuL80h6YTbq/giphy.gif?cid=ecf05e47f7cas4uugmw9k7whhb5fx06n7zlpzwwgcjw482n4&ep=v1_gifs_search&rid=giphy.gif&ct=g",
+		"https://media.giphy.com/media/RqbkeCZGgipSo/giphy.gif?cid=ecf05e47afa5rztdshpog9jf8m2ecm4ecw8pn38ihu8qxypn&ep=v1_gifs_search&rid=giphy.gif&ct=g",
+		"https://media.giphy.com/media/cewa5NekOzPUs/giphy.gif?cid=ecf05e479u04yrdf9agw00vffsqyj3ndd2fcn8hwsq0lgvpg&ep=v1_gifs_search&rid=giphy.gif&ct=g",
 	}
 
-	if roll <= chance {
+	if roll >= chance {
 		successMessage := successMessages[rand.IntN(len(successMessages))]
 		s.ChannelMessageSend(m.ChannelID, successMessage)
 
