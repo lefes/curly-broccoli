@@ -24,8 +24,6 @@ func (c *Client) CurrentWeather(city string) (*WeatherResponse, error) {
 	cityEncoded := url.QueryEscape(city)
 	url := fmt.Sprintf("%s/%s/today?key=%s&unitGroup=metric&include=current&contentType=json&lang=ru", c.BaseURL, cityEncoded, c.APIKey)
 
-	fmt.Println(url)
-
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch current weather: %w", err)
