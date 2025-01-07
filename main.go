@@ -473,7 +473,7 @@ func main() {
 
 		weatherMathes := weatherCommandRe.FindStringSubmatch(m.Content)
 		if len(weatherMathes) > 0 {
-			err := weather.HandleWeatherMessage(*weatherClient, s, m, weatherApiKey, weatherApiBaseUrl, weatherMathes)
+			err := weather.HandleWeatherMessage(*weatherClient, s, m, weatherMathes)
 			if err != nil {
 				weatherLogger.Error("Error handling weather message:", err)
 			}

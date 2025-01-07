@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/lefes/curly-broccoli/pkg/logging"
+	"github.com/sirupsen/logrus"
 )
 
 var cityShortcuts = map[string]string{
@@ -16,6 +18,13 @@ var cityShortcuts = map[string]string{
 	"нск": "Novosibirsk",
 	"крд": "Krasnodar",
 	"соч": "Sochi",
+}
+
+var logger *logrus.Entry
+
+func InitWeatherLogger() {
+	logger = logging.GetLogger("weather")
+
 }
 
 func sendHelpMessage(session *discordgo.Session, message *discordgo.MessageCreate) error {
@@ -129,7 +138,7 @@ func resolveShortCut(input string) string {
 	return input
 }
 
-func HandleWeatherMessage(client Client, session *discordgo.Session, message *discordgo.MessageCreate, apiKey, baseURL string, cmdMatches []string) error {
+func HandleWeatherMessage(client Client, session *discordgo.Session, message *discordgo.MessageCreate, cmdMatches []string) error {
 	if cmdMatches[2] == "" {
 		return sendHelpMessage(session, message)
 	}
