@@ -16,6 +16,8 @@ type ForecastDay struct {
 	TempMax   float64 `json:"tempmax"`
 	TempMin   float64 `json:"tempmin"`
 	Condition string  `json:"conditions"`
+	SunRise   string  `json:"sunrise"`
+	SunSet    string  `json:"sunset"`
 }
 
 // CURRENT

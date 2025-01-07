@@ -68,8 +68,14 @@ func sendForecastWeatherMessage(session *discordgo.Session, message *discordgo.M
 	fields := []*discordgo.MessageEmbedField{}
 	for _, day := range weather.Days {
 		fields = append(fields, &discordgo.MessageEmbedField{
-			Name:   day.Datetime,
-			Value:  fmt.Sprintf("🌡️ **Max:** %.1f°C\n🌡️ **Min:** %.1f°C\n🌤️ **Condition:** %s", day.TempMax, day.TempMin, day.Condition),
+			Name: day.Datetime,
+			Value: fmt.Sprintf(
+				"🌡️ **Max:** %.1f°C\n"+
+					"🌡️ **Min:** %.1f°C\n"+
+					"🌤️ **Condition:** %s\n"+
+					"🌅 **Sunrise:** %s\n"+
+					"🌇 **Sunset:** %s",
+				day.TempMax, day.TempMin, day.Condition, day.SunRise, day.SunSet),
 			Inline: false,
 		})
 	}
@@ -116,6 +122,16 @@ func sendCurrentWeatherMessage(session *discordgo.Session, message *discordgo.Me
 				Value:  weather.Days[0].Datetime,
 				Inline: true,
 			},
+			{
+				Name:   "🌅 Sunrise",
+				Value:  weather.Days[0].SunRise,
+				Inline: true,
+			},
+			{
+				Name:   "🌇 Sunset",
+				Value:  weather.Days[0].SunSet,
+				Inline: true,
+			},
 		},
 		Timestamp: time.Now().Format(time.RFC3339),
 	}
@@ -127,6 +143,7 @@ func sendCurrentWeatherMessage(session *discordgo.Session, message *discordgo.Me
 	}
 	return nil
 }
+
 
 func resolveShortCut(input string) string {
 	normalizedInput := strings.ToLower(input)
