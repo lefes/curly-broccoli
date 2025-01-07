@@ -463,6 +463,8 @@ func main() {
 	weatherApiBaseUrl := "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline"
 	weatherCommandRe := regexp.MustCompile(`^!(weather|погода)(?:\s+([\p{L}\s]+))?(?:\s+(\d+))?$`)
 
+	weatherClient := weather.NewClient(weatherApiKey, weatherApiBaseUrl)
+
 	quote := quotes.New()
 
 	session.Identify.Intents = discordgo.IntentsGuildMessages
@@ -471,7 +473,7 @@ func main() {
 
 		weatherMathes := weatherCommandRe.FindStringSubmatch(m.Content)
 		if len(weatherMathes) > 0 {
-			err := weather.HandleWeatherMessage(s, m, weatherApiKey, weatherApiBaseUrl, weatherMathes)
+			err := weather.HandleWeatherMessage(*weatherClient, s, m, weatherApiKey, weatherApiBaseUrl, weatherMathes)
 			if err != nil {
 				weatherLogger.Error("Error handling weather message:", err)
 			}

@@ -129,7 +129,7 @@ func resolveShortCut(input string) string {
 	return input
 }
 
-func HandleWeatherMessage(session *discordgo.Session, message *discordgo.MessageCreate, apiKey, baseURL string, cmdMatches []string) error {
+func HandleWeatherMessage(client Client, session *discordgo.Session, message *discordgo.MessageCreate, apiKey, baseURL string, cmdMatches []string) error {
 	if cmdMatches[2] == "" {
 		return sendHelpMessage(session, message)
 	}
@@ -145,7 +145,7 @@ func HandleWeatherMessage(session *discordgo.Session, message *discordgo.Message
 		days = parsedDays
 	}
 	if days == 0 {
-		err, weather := GetCurrentWeather(apiKey, baseURL, city)
+		weather, err := client.CurrentWeather(city)
 		if err != nil {
 			session.ChannelMessageSend(message.ChannelID, "Ошибка: Не удалось получить текущую погоду.")
 			return err
@@ -158,7 +158,7 @@ func HandleWeatherMessage(session *discordgo.Session, message *discordgo.Message
 		return nil
 	}
 
-	err, weather := GetForecastWeather(apiKey, baseURL, city, days)
+	weather, err := client.ForecastWeather(city, days)
 	if err != nil {
 		session.ChannelMessageSend(message.ChannelID, "Ошибка: Не удалось получить прогноз погоды.")
 		return err
