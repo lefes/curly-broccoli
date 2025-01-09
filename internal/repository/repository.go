@@ -10,7 +10,6 @@ import (
 type Users interface {
 	CreateUser(user *domain.User) error
 	GetUserByDiscordID(discordID string) (*domain.User, error)
-	UpdateUser(user *domain.User) error
 	GetAllUsers() ([]*domain.User, error)
 	DeleteUser(userId string) error
 	UpdateUserRole(discordID string, roleID int) error
@@ -40,6 +39,7 @@ type UserActivity interface {
 	MarkLimitReached(userID string)
 	Reset() []*domain.UserActivity
 	GetMaxMessages() int
+	IsLimitReached(userdID string) bool
 }
 
 type Repositories struct {

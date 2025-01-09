@@ -37,6 +37,7 @@ type UserActivities interface {
 	MarkLimitReached(userID string)
 	Reset() []*domain.UserActivity
 	GetMaxMessages() int
+	IsLimitReached(userdID string) bool
 }
 
 type Services struct {

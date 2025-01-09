@@ -110,27 +110,27 @@ func (r *UsersRepo) GetUserByDiscordID(discordID string) (*domain.User, error) {
 	return user, nil
 }
 
-func (r *UsersRepo) UpdateUser(user *domain.User) error {
-	query := ` 
-		UPDATE users
-		SET username = ?, role_id = ?, points = ?, respect = ?, daily_messages = ?, last_activity = ?
-		WHERE discord_id = ?`
+/* func (r *UsersRepo) UpdateUser(user *domain.User) error { */
+/* query := `  */
+/* UPDATE users */
+/* SET username = ?, role_id = ?, points = ?, respect = ?, daily_messages = ?, last_activity = ? */
+/* WHERE discord_id = ?` */
 
-	_, err := r.db.Exec(query,
-		user.Username,
-		user.RoleID,
-		user.Points,
-		user.Respect,
-		user.DailyMessages,
-		user.LastActivity,
-		user.DiscordID,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to update user with DiscordID %s: %w", user.DiscordID, err)
-	}
+/* _, err := r.db.Exec(query, */
+/* user.Username, */
+/* user.RoleID, */
+/* user.Points, */
+/* user.Respect, */
+/* user.DailyMessages, */
+/* user.LastActivity, */
+/* user.DiscordID, */
+/* ) */
+/* if err != nil { */
+/* return fmt.Errorf("failed to update user with DiscordID %s: %w", user.DiscordID, err) */
+/* } */
 
-	return nil
-}
+/* return nil */
+/* } */
 
 func (r *UsersRepo) UpdateUserRole(discordID string, roleID int) error {
 	query := "UPDATE users SET role_id = ? WHERE discord_id = ?"
@@ -160,7 +160,7 @@ func (r *UsersRepo) UpdateUserRespect(discordID string, respect int) error {
 }
 
 func (r *UsersRepo) UpdateUserDailyMessages(discordID string, dailyMessages int) error {
-	query := "UPDATE users SET daily_messages = daily_messages + ? WHERE discord_id = ?"
+	query := "UPDATE users SET daily_messages = ? WHERE discord_id = ?"
 	_, err := r.db.Exec(query, dailyMessages, discordID)
 	if err != nil {
 		return fmt.Errorf("failed to update daily messages for DiscordID %s: %w", discordID, err)

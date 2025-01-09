@@ -542,6 +542,10 @@ func main() {
 	service := services.NewServices(repo)
 
 	messageHandler := service_handlers.NewMessageHandler()
+	messageHandler.MessageHandler.AddHandler(func(msg *domain.Message, ctx *domain_handler.HandlerContext) bool {
+		return handlers.HandlePoints(msg, ctx.Services, ctx.Session)
+	})
+
 	session.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		syncUsers(service, logger)
@@ -554,30 +558,8 @@ func main() {
 			ChannelID: m.ChannelID,
 			Raw:       m,
 		}
-		messageHandler.MessageHandler.AddHandler(func(msg *domain.Message, ctx *domain_handler.HandlerContext) bool {
-			return handlers.HandlePoints(msg, ctx.Services, ctx.Session)
-		})
-		messageHandler.MessageHandler.HandleMessage(msg, ctx)
 
-		/*      if strings.HasPrefix(m.Content, "!promote") { */
-		/* if len(m.Mentions) > 0 { */
-		/* mentionedUser := m.Mentions[0] */
-		/* username := mentionedUser.Username */
-		/* userID := mentionedUser.ID */
-		/* err := service.Roles.PromoteUser(userID) */
-		/* if err != nil { */
-		/* logger.Error("Error promoting user:", err) */
-		/* _, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Failed to promote user %s: %s", username, err)) */
-		/* if err != nil { */
-		/* logger.Error("Error sending message:", err) */
-		/* } */
-		/* return */
-		/* } */
-		/* _, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("User %s has been promoted!", username)) */
-		/* } else { */
-		/* logger.Warn("No mentions found in the message") */
-		/* } */
-		/* } */
+		messageHandler.MessageHandler.HandleMessage(msg, ctx)
 
 		weatherMathes := weatherCommandRe.FindStringSubmatch(m.Content)
 		if len(weatherMathes) > 0 {

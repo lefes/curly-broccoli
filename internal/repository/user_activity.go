@@ -68,3 +68,10 @@ func (r *UserActivityRepo) GetMaxMessages() int {
 
 	return r.activities.MaxMessages
 }
+
+func (r *UserActivityRepo) IsLimitReached(userID string) bool {
+	r.activities.Mu.Lock()
+	defer r.activities.Mu.Unlock()
+
+	return r.activities.LimitReachedIDs[userID]
+}

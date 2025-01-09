@@ -28,3 +28,7 @@ func (s *UserActivitiesService) Reset() []*domain.UserActivity {
 func (s *UserActivitiesService) GetMaxMessages() int {
 	return s.repo.GetMaxMessages()
 }
+
+func (s *UserActivitiesService) IsLimitReached(userID string) bool {
+	return s.repo.IsLimitReached(userID)
+}
