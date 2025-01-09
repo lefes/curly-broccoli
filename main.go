@@ -11,10 +11,18 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
+	"github.com/lefes/curly-broccoli/internal/domain"
+	"github.com/lefes/curly-broccoli/internal/handlers"
+	domain_handler "github.com/lefes/curly-broccoli/internal/handlers/domain"
+	service_handlers "github.com/lefes/curly-broccoli/internal/handlers/service"
+	"github.com/lefes/curly-broccoli/internal/repository"
+	"github.com/lefes/curly-broccoli/internal/services"
 	"github.com/lefes/curly-broccoli/jokes"
 	"github.com/lefes/curly-broccoli/pkg/logging"
+	"github.com/lefes/curly-broccoli/pkg/storage"
 	"github.com/lefes/curly-broccoli/pkg/weather"
 	"github.com/lefes/curly-broccoli/quotes"
+	"github.com/sirupsen/logrus"
 )
 
 func handleRaceCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -447,17 +455,78 @@ func gayMessage(s *discordgo.Session, m *discordgo.MessageCreate, user string) {
 	}
 }
 
+func syncUsers(service *services.Services, logger *logrus.Entry) {
+	discordUsers := make(map[string]bool)
+	dbUsers := make(map[string]bool)
+
+	members, err := service.Discord.GetAllUsers(GuildID)
+	if err != nil {
+		logger.Error("Error getting all users from Discord:", err)
+		return
+	}
+
+	users, err := service.User.GetAllUsers()
+	if err != nil {
+		logger.Error("Error getting all users from database:", err)
+		return
+	}
+
+	for _, member := range members.Members {
+		discordUsers[member.User.ID] = true
+	}
+
+	for _, user := range users {
+		dbUsers[user.DiscordID] = true
+	}
+
+	for _, member := range members.Members {
+		if !dbUsers[member.User.ID] {
+			err := service.User.CreateUser(&domain.User{
+				DiscordID:     member.User.ID,
+				Username:      member.User.Username,
+				RoleID:        1,
+				Points:        0,
+				Respect:       0,
+				DailyMessages: 0,
+			})
+			if err != nil {
+				logger.Error("Error adding user to database:", err)
+			} else {
+				logger.Info("Added user to database:", member.User.ID)
+			}
+		}
+	}
+
+	for userID := range dbUsers {
+		if !discordUsers[userID] {
+			err := service.User.DeleteUser(userID)
+			if err != nil {
+				logger.Error("Error deleting user from database:", err)
+			} else {
+				logger.Info("Deleted user from database:", userID)
+			}
+		}
+	}
+}
+
 func main() {
 
 	logging.InitLogger()
-	mainLogger := logging.GetLogger("main")
+	logger := logging.GetLogger("main")
 	weather.InitWeatherLogger()
+	storage.InitLogger()
 
 	session, err := discordgo.New("Bot " + Token)
 	if err != nil {
-		mainLogger.Error("Error creating Discord session:", err)
+		logger.Error("Error creating Discord session:", err)
 		return
 	}
+	db, err := storage.InitDB("./data/bot.db")
+	if err != nil {
+		logger.Error("Error initializing database:", err)
+		return
+	}
+	defer db.Close()
 
 	weatherLogger := logging.GetLogger("weather")
 	weatherApiBaseUrl := "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline"
@@ -469,7 +538,28 @@ func main() {
 
 	session.Identify.Intents = discordgo.IntentsGuildMessages
 
+	repo := repository.NewRepository(db, session)
+	service := services.NewServices(repo)
+
+	messageHandler := service_handlers.NewMessageHandler()
+	messageHandler.MessageHandler.AddHandler(func(msg *domain.Message, ctx *domain_handler.HandlerContext) bool {
+		return handlers.HandlePoints(msg, ctx.Services, ctx.Session)
+	})
+
 	session.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
+
+		syncUsers(service, logger)
+
+		ctx := domain_handler.NewHandlerContext(service, s)
+		msg := &domain.Message{
+			Author:    m.Author.ID,
+			Username:  m.Author.Username,
+			Content:   m.Content,
+			ChannelID: m.ChannelID,
+			Raw:       m,
+		}
+
+		messageHandler.MessageHandler.HandleMessage(msg, ctx)
 
 		weatherMathes := weatherCommandRe.FindStringSubmatch(m.Content)
 		if len(weatherMathes) > 0 {
@@ -513,7 +603,7 @@ func main() {
 			}
 			err = session.MessageReactionAdd(m.ChannelID, m.ID, emoji.APIName())
 			if err != nil {
-				mainLogger.Error("error reacting to message,", err)
+				logger.Error("error reacting to message,", err)
 			}
 		}
 
@@ -526,7 +616,7 @@ func main() {
 			}
 			err = session.MessageReactionAdd(m.ChannelID, m.ID, emoji.APIName())
 			if err != nil {
-				mainLogger.Error("error reacting to message,", err)
+				logger.Error("error reacting to message,", err)
 			}
 		}
 
@@ -535,7 +625,7 @@ func main() {
 				err := s.MessageReactionAdd(m.ChannelID, m.ID, v)
 				time.Sleep(100 * time.Millisecond)
 				if err != nil {
-					mainLogger.Error("error reacting to message,", err)
+					logger.Error("error reacting to message,", err)
 				}
 			}
 		}
@@ -545,7 +635,7 @@ func main() {
 				err := s.MessageReactionAdd(m.ChannelID, m.ID, v)
 				time.Sleep(100 * time.Millisecond)
 				if err != nil {
-					mainLogger.Error("error reacting to message,", err)
+					logger.Error("error reacting to message,", err)
 				}
 			}
 		}
@@ -553,82 +643,82 @@ func main() {
 		if strings.Contains(strings.ToLower(m.Content), "спасибо") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Это тебе спасибо! 😎😎😎", m.Reference())
 			if err != nil {
-				mainLogger.Error("error sending message,", err)
+				logger.Error("error sending message,", err)
 			}
 		}
 
 		if strings.Contains(strings.ToLower(m.Content), "бобр") || strings.Contains(strings.ToLower(m.Content), "бобер") || strings.Contains(strings.ToLower(m.Content), "курва") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Kurwa bóbr. Ja pierdolę, Jakie bydlę jebane 🦫🦫🦫", m.Reference())
 			if err != nil {
-				mainLogger.Error("error sending message,", err)
+				logger.Error("error sending message,", err)
 			}
 		}
 
 		if strings.Contains(strings.ToLower(m.Content), "привет") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Привет!", m.Reference())
 			if err != nil {
-				mainLogger.Error("error sending message,", err)
+				logger.Error("error sending message,", err)
 			}
 		}
 
 		if strings.Contains(strings.ToLower(m.Content), "пиф") && strings.ContainsAny(strings.ToLower(m.Content), "паф") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Пиф-паф!🔫🔫🔫", m.Reference())
 			if err != nil {
-				mainLogger.Error("error sending message,", err)
+				logger.Error("error sending message,", err)
 			}
 		} else if strings.Contains(strings.ToLower(m.Content), "pif") && strings.ContainsAny(strings.ToLower(m.Content), "paf") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Pif-paf!🔫🔫🔫", m.Reference())
 			if err != nil {
-				mainLogger.Error("error sending message,", err)
+				logger.Error("error sending message,", err)
 			}
 		}
 
 		if strings.Contains(strings.ToLower(m.Content), "алкаш") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Эй мальчик, давай обмен,я же вижу что ты алкаш (c) Чайок", m.Reference())
 			if err != nil {
-				mainLogger.Error("error sending message,", err)
+				logger.Error("error sending message,", err)
 			}
 		}
 
 		if strings.Contains(strings.ToLower(m.Content), "дед инсайд") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Глисты наконец-то померли?", m.Reference())
 			if err != nil {
-				mainLogger.Error("error sending message,", err)
+				logger.Error("error sending message,", err)
 			}
 		}
 
 		if strings.Contains(strings.ToLower(m.Content), "я гей") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Я тоже!", m.Reference())
 			if err != nil {
-				mainLogger.Error("error sending message,", err)
+				logger.Error("error sending message,", err)
 			}
 		}
 
 		if strings.Contains(strings.ToLower(m.Content), "я лесбиянка") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Я тоже!", m.Reference())
 			if err != nil {
-				mainLogger.Error("error sending message,", err)
+				logger.Error("error sending message,", err)
 			}
 		}
 
 		if strings.Contains(strings.ToLower(m.Content), "я би") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Я тоже!", m.Reference())
 			if err != nil {
-				mainLogger.Error("error sending message,", err)
+				logger.Error("error sending message,", err)
 			}
 		}
 
 		if strings.Contains(strings.ToLower(m.Content), "я натурал") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Я иногда тоже!", m.Reference())
 			if err != nil {
-				mainLogger.Error("error sending message,", err)
+				logger.Error("error sending message,", err)
 			}
 		}
 
 		if strings.Contains(strings.ToLower(m.Content), "понедельник") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "День тяжелый 😵‍💫", m.Reference())
 			if err != nil {
-				mainLogger.Error("error sending message,", err)
+				logger.Error("error sending message,", err)
 			}
 		}
 
@@ -636,7 +726,7 @@ func main() {
 			if strings.Contains(strings.ToLower(m.Content), v) {
 				_, err := s.ChannelMessageSendReply(m.ChannelID, "Скорее выздоравливай и больше не болей! 😍", m.Reference())
 				if err != nil {
-					mainLogger.Error("error sending message,", err)
+					logger.Error("error sending message,", err)
 				}
 			}
 		}
@@ -645,7 +735,7 @@ func main() {
 			if strings.Contains(strings.ToLower(m.Content), v) {
 				err := s.MessageReactionAdd(m.ChannelID, m.ID, "👻")
 				if err != nil {
-					mainLogger.Error("error reacting to message,", err)
+					logger.Error("error reacting to message,", err)
 				}
 			}
 		}
@@ -662,7 +752,7 @@ func main() {
 			response := penisCommand()
 			_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>\n%s", user, response), m.Reference())
 			if err != nil {
-				mainLogger.Error("error sending message,", err)
+				logger.Error("error sending message,", err)
 			}
 		}
 
@@ -679,14 +769,14 @@ func main() {
 			response := boobsCommand()
 			_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>\n%s", user, response), m.Reference())
 			if err != nil {
-				mainLogger.Error("error sending message,", err)
+				logger.Error("error sending message,", err)
 			}
 		}
 
 		if strings.Contains(strings.ToLower(m.Content), "полчаса") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "полчаса, полчаса - не вопрос. Не ответ полчаса, полчаса (c) Чайок", m.Reference())
 			if err != nil {
-				mainLogger.Error("error sending message,", err)
+				logger.Error("error sending message,", err)
 			}
 		}
 
@@ -697,7 +787,7 @@ func main() {
 				customEmoji, customEmoji, customEmoji, customEmoji, customEmoji)
 			_, err := s.ChannelMessageSendReply(m.ChannelID, response, m.Reference())
 			if err != nil {
-				mainLogger.Error("error sending message,", err)
+				logger.Error("error sending message,", err)
 			}
 		}
 
@@ -708,14 +798,14 @@ func main() {
 		if strings.Contains(strings.ToLower(m.Content), "!quote") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, quote.GetRandom(), m.Reference())
 			if err != nil {
-				mainLogger.Error("error sending message,", err)
+				logger.Error("error sending message,", err)
 			}
 		}
 
 		if strings.Contains(strings.ToLower(m.Content), "!academia") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, quote.GetRandomAcademia(), m.Reference())
 			if err != nil {
-				mainLogger.Error("error sending message,", err)
+				logger.Error("error sending message,", err)
 			}
 		}
 
@@ -726,7 +816,7 @@ func main() {
 				if rand.IntN(10) == 0 {
 					_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>, кажется медведь прямо сейчас завалит тебя 🐻🐻🐻", user), m.Reference())
 					if err != nil {
-						mainLogger.Error("error sending message,", err)
+						logger.Error("error sending message,", err)
 					}
 					return
 				}
@@ -740,7 +830,7 @@ func main() {
 			medvedProc := rand.IntN(101)
 			_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>, завалишь медведя с %d%% вероятностью 🐻", user, medvedProc), m.Reference())
 			if err != nil {
-				mainLogger.Error("error sending message,", err)
+				logger.Error("error sending message,", err)
 			}
 		}
 
@@ -750,7 +840,7 @@ func main() {
 			roll := rand.IntN(20) + 1
 			_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>, ты выкинул %d", user, roll), m.Reference())
 			if err != nil {
-				mainLogger.Error("error sending message,", err)
+				logger.Error("error sending message,", err)
 			}
 		}
 
@@ -761,7 +851,7 @@ func main() {
 				if rand.IntN(10) == 0 {
 					_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>, а вот и нет, писька это ты!!!", user), m.Reference())
 					if err != nil {
-						mainLogger.Error("error sending message,", err)
+						logger.Error("error sending message,", err)
 					}
 					return
 				}
@@ -777,7 +867,7 @@ func main() {
 			if piskaProc == 100 {
 				_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>, ты просто прекрасная писька на ВСЕ 100%%", user), m.Reference())
 				if err != nil {
-					mainLogger.Error("error sending message,", err)
+					logger.Error("error sending message,", err)
 				}
 				return
 			}
@@ -785,7 +875,7 @@ func main() {
 			if piskaProc == 0 {
 				_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("Извини, <@%s>, но ты совсем не писька (0%%), приходи когда описюнеешь", user), m.Reference())
 				if err != nil {
-					mainLogger.Error("error sending message,", err)
+					logger.Error("error sending message,", err)
 				}
 				return
 			}
@@ -795,7 +885,7 @@ func main() {
 				//#nosec G404 -- This is a false positive
 				_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s> настоящая писька на %d%%, вот тебе цитата: %s", user, piskaProc, quotesPublic[rand.IntN(len(quotesPublic))]), m.Reference())
 				if err != nil {
-					mainLogger.Error("error sending message,", err)
+					logger.Error("error sending message,", err)
 				}
 				return
 			}
@@ -803,7 +893,7 @@ func main() {
 			if piskaProc > 50 {
 				_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s> писька на %d%%, молодец, так держать!", user, piskaProc), m.Reference())
 				if err != nil {
-					mainLogger.Error("error sending message,", err)
+					logger.Error("error sending message,", err)
 				}
 				return
 			}
@@ -811,7 +901,7 @@ func main() {
 			//#nosec G404 -- This is a false positive
 			_, err = s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s> писька на %d%%, но нужно еще вырасти!", user, piskaProc), m.Reference())
 			if err != nil {
-				mainLogger.Error("error sending message,", err)
+				logger.Error("error sending message,", err)
 			}
 		}
 
@@ -823,7 +913,7 @@ func main() {
 			} else {
 				_, err := s.ChannelMessageSend(m.ChannelID, "Пожалуйста, упомяни пользователя для проверки гейства!")
 				if err != nil {
-					mainLogger.Error("error sending message:", err)
+					logger.Error("error sending message:", err)
 				}
 				return
 			}
@@ -832,7 +922,7 @@ func main() {
 				userID = m.Author.ID
 				_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<@%s>, а может быть ты, моя голубая луна???!!!", userID))
 				if err != nil {
-					mainLogger.Error("error sending message:", err)
+					logger.Error("error sending message:", err)
 				}
 			}
 
@@ -847,7 +937,7 @@ func main() {
 				if rand.IntN(10) == 0 {
 					_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("<@%s>, а вот и нет, писька это ты!!!", user), m.Reference())
 					if err != nil {
-						mainLogger.Error("error sending message,", err)
+						logger.Error("error sending message,", err)
 					}
 					return
 				}
@@ -861,7 +951,7 @@ func main() {
 
 			_, err := s.ChannelMessageSendReply(m.ChannelID, piskaMessage(users), m.Reference())
 			if err != nil {
-				mainLogger.Error("error sending message,", err)
+				logger.Error("error sending message,", err)
 			}
 			return
 
@@ -870,12 +960,12 @@ func main() {
 		if strings.HasPrefix(strings.ToLower(m.Content), "!анекдот") {
 			joke, err := jokes.GetJoke()
 			if err != nil {
-				mainLogger.Error("error getting joke,", err)
+				logger.Error("error getting joke,", err)
 				return
 			}
 			_, err = s.ChannelMessageSendReply(m.ChannelID, joke, m.Reference())
 			if err != nil {
-				mainLogger.Error("error sending message,", err)
+				logger.Error("error sending message,", err)
 			}
 		}
 
@@ -883,7 +973,7 @@ func main() {
 			if strings.Contains(strings.ToLower(m.Content), v) {
 				err := s.MessageReactionAdd(m.ChannelID, m.ID, "🧙")
 				if err != nil {
-					mainLogger.Error("error reacting message,", err)
+					logger.Error("error reacting message,", err)
 				}
 			}
 		}
@@ -892,7 +982,7 @@ func main() {
 			if strings.Contains(strings.ToLower(m.Content), v) {
 				err := s.MessageReactionAdd(m.ChannelID, m.ID, "🔥")
 				if err != nil {
-					mainLogger.Error("error reacting message,", err)
+					logger.Error("error reacting message,", err)
 				}
 			}
 		}
@@ -900,14 +990,14 @@ func main() {
 		if strings.Contains(strings.ToLower(m.Content), "я писюн") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Я тоже писюн!!!", m.Reference())
 			if err != nil {
-				mainLogger.Error("error sending message,", err)
+				logger.Error("error sending message,", err)
 			}
 		}
 
 		if strings.Contains(strings.ToLower(m.Content), "я писька") {
 			_, err := s.ChannelMessageSendReply(m.ChannelID, "Я тоже писька!!!", m.Reference())
 			if err != nil {
-				mainLogger.Error("error sending message,", err)
+				logger.Error("error sending message,", err)
 			}
 		}
 
@@ -915,21 +1005,21 @@ func main() {
 			//#nosec G404 -- This is a false positive
 			_, err := s.ChannelMessageSendReply(m.ChannelID, fmt.Sprintf("Мой ответ: %s", magicBallMessages[rand.IntN(len(magicBallMessages))]), m.Reference())
 			if err != nil {
-				mainLogger.Error("error sending message,", err)
+				logger.Error("error sending message,", err)
 			}
 		}
 
 		if strings.Contains(strings.ToLower(m.Content), "демон") {
 			err := s.MessageReactionAdd(m.ChannelID, m.ID, "👹")
 			if err != nil {
-				mainLogger.Error("error reacting message,", err)
+				logger.Error("error reacting message,", err)
 			}
 		}
 
 		if strings.Contains(strings.ToLower(m.Content), "клоун") {
 			err := s.MessageReactionAdd(m.ChannelID, m.ID, "🤡")
 			if err != nil {
-				mainLogger.Error("error reacting message,", err)
+				logger.Error("error reacting message,", err)
 			}
 		}
 
@@ -937,11 +1027,11 @@ func main() {
 
 	err = session.Open()
 	if err != nil {
-		mainLogger.Error("error opening connection,", err)
+		logger.Error("error opening connection,", err)
 		return
 	}
 
-	mainLogger.Info("Bot is now running.  Press CTRL-C to exit.")
+	logger.Info("Bot is now running.  Press CTRL-C to exit.")
 	<-make(chan struct{})
 
 }
