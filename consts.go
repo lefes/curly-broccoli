@@ -5,6 +5,9 @@ import (
 )
 
 var (
+	GuildID          = "147313959819542528"
+	discordUsers     = make(map[string]bool)
+	dbUsers          = make(map[string]bool)
 	weatherApiKey    string
 	Token            string
 	raceParticipants = make(map[string]string)
