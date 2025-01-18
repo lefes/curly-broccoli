@@ -3,6 +3,7 @@ package services
 import (
 	"github.com/lefes/curly-broccoli/internal/domain"
 	"github.com/lefes/curly-broccoli/internal/repository"
+	"github.com/lefes/curly-broccoli/internal/transport/http/weatherapi"
 )
 
 type Users interface {
@@ -14,6 +15,16 @@ type Users interface {
 	UpdateUserPoints(discordID string, points int) error
 	UpdateUserRespect(discordID string, respect int) error
 	UpdateUserDailyMessages(discordID string, dailyMessages int) error
+	AddOrUpdateUserActivity(userID string) *domain.UserActivity
+	Reset() []*domain.UserActivity
+	MarkLimitReached(userID string)
+	GetMaxMessages() int
+	IsLimitReached(userdID string) bool
+}
+
+type WeatherAPI interface {
+	CurrentWeather(city string) (*weatherapi.WeatherResponse, error)
+	ForecastWeather(city string, days int) (*weatherapi.WeatherResponse, error)
 }
 
 type Transactions interface {
@@ -32,33 +43,25 @@ type Roles interface {
 	GetUserRole(userID string) (int, error)
 }
 
-type UserActivities interface {
-	AddOrUpdateUser(userID string) *domain.UserActivity
-	MarkLimitReached(userID string)
-	Reset() []*domain.UserActivity
-	GetMaxMessages() int
-	IsLimitReached(userdID string) bool
-}
-
 type Services struct {
-	User         Users
-	Transaction  Transactions
-	Discord      Discord
-	Roles        Roles
-	UserActivity UserActivities
+	User        Users
+	Transaction Transactions
+	Discord     Discord
+	Roles       Roles
+	WAPI        WeatherAPI
 }
 
-func NewServices(repos *repository.Repositories) *Services {
+func NewServices(repos *repository.Repositories, wClient *weatherapi.Client) *Services {
 	userService := NewUsersService(repos.User)
 	transactionService := NewTransactionService(repos.Transaction)
 	discordService := NewDiscordService(repos.Discord)
 	rolesService := NewRoleService(repos.Role)
-	userActivityService := NewUserActivitiesService(repos.UserActivity)
+	weatherService := NewWeatherService(wClient)
 	return &Services{
-		User:         userService,
-		Transaction:  transactionService,
-		Discord:      discordService,
-		Roles:        rolesService,
-		UserActivity: userActivityService,
+		User:        userService,
+		Transaction: transactionService,
+		Discord:     discordService,
+		Roles:       rolesService,
+		WAPI:        weatherService,
 	}
 }

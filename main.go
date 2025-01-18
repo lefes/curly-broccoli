@@ -15,12 +15,11 @@ import (
 	"github.com/lefes/curly-broccoli/internal/handlers"
 	domain_handler "github.com/lefes/curly-broccoli/internal/handlers/domain"
 	service_handlers "github.com/lefes/curly-broccoli/internal/handlers/service"
+	"github.com/lefes/curly-broccoli/internal/logging"
 	"github.com/lefes/curly-broccoli/internal/repository"
 	"github.com/lefes/curly-broccoli/internal/services"
+	"github.com/lefes/curly-broccoli/internal/transport/http/weatherapi"
 	"github.com/lefes/curly-broccoli/jokes"
-	"github.com/lefes/curly-broccoli/pkg/logging"
-	"github.com/lefes/curly-broccoli/pkg/storage"
-	"github.com/lefes/curly-broccoli/pkg/weather"
 	"github.com/lefes/curly-broccoli/quotes"
 	"github.com/sirupsen/logrus"
 )
@@ -314,9 +313,14 @@ func init() {
 		panic("You need to set the TOKEN environment variable.")
 	}
 
-	weatherApiKey = os.Getenv("WEATHER_API_KEY")
-	if weatherApiKey == "" {
-		panic("You need to set the WEATHER_API_KEY environment variable.")
+	/*  weatherApiKey = os.Getenv("WEATHER_API_KEY") */
+	/* if weatherApiKey == "" { */
+	/* panic("You need to set the WEATHER_API_KEY environment variable.") */
+	/* } */
+
+	dbPath := os.Getenv("DB_PATH")
+	if dbPath == "" {
+		panic("You need to set the DB_PATH environment variable.")
 	}
 }
 
@@ -513,33 +517,33 @@ func main() {
 
 	logging.InitLogger()
 	logger := logging.GetLogger("main")
-	weather.InitWeatherLogger()
-	storage.InitLogger()
+	wLogger := logging.GetLogger("weather")
+	stLogger := logging.GetLogger("storage")
 
 	session, err := discordgo.New("Bot " + Token)
 	if err != nil {
 		logger.Error("Error creating Discord session:", err)
 		return
 	}
-	db, err := storage.InitDB("./data/bot.db")
+	db, err := storage.InitDB(dbPath)
 	if err != nil {
-		logger.Error("Error initializing database:", err)
+		stLogger.Error("Error initializing database:", err)
 		return
 	}
 	defer db.Close()
 
-	weatherLogger := logging.GetLogger("weather")
 	weatherApiBaseUrl := "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline"
 	weatherCommandRe := regexp.MustCompile(`^!(weather|погода)(?:\s+([\p{L}\s]+))?(?:\s+(\d+))?$`)
 
-	weatherClient := weather.NewClient(weatherApiKey, weatherApiBaseUrl)
+	// ????? Or maybe new client creation should be within weather service ??
+	weatherClient := weatherapi.NewClient(weatherApiKey, weatherApiBaseUrl)
 
 	quote := quotes.New()
 
 	session.Identify.Intents = discordgo.IntentsGuildMessages
 
 	repo := repository.NewRepository(db, session)
-	service := services.NewServices(repo)
+	service := services.NewServices(repo, weatherClient)
 
 	messageHandler := service_handlers.NewMessageHandler()
 	messageHandler.MessageHandler.AddHandler(func(msg *domain.Message, ctx *domain_handler.HandlerContext) bool {
@@ -565,7 +569,7 @@ func main() {
 		if len(weatherMathes) > 0 {
 			err := weather.HandleWeatherMessage(*weatherClient, s, m, weatherMathes)
 			if err != nil {
-				weatherLogger.Error("Error handling weather message:", err)
+				wLogger.Error("Error handling weather message:", err)
 			}
 		}
 
