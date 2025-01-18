@@ -18,6 +18,7 @@ import (
 	"github.com/lefes/curly-broccoli/internal/logging"
 	"github.com/lefes/curly-broccoli/internal/repository"
 	"github.com/lefes/curly-broccoli/internal/services"
+	"github.com/lefes/curly-broccoli/internal/storage"
 	"github.com/lefes/curly-broccoli/internal/transport/http/weatherapi"
 	"github.com/lefes/curly-broccoli/jokes"
 	"github.com/lefes/curly-broccoli/quotes"

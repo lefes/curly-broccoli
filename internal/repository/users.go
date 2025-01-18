@@ -3,16 +3,21 @@ package repository
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/lefes/curly-broccoli/internal/domain"
 )
 
 type UsersRepo struct {
-	db *sql.DB
+	db         *sql.DB
+	activities *domain.UserActivities
 }
 
-func NewUsersRepo(db *sql.DB) *UsersRepo {
-	return &UsersRepo{db: db}
+func NewUsersRepo(db *sql.DB, a *domain.UserActivities) *UsersRepo {
+	return &UsersRepo{
+		db:         db,
+		activities: a,
+	}
 }
 
 func (r *UsersRepo) GetAllUsers() ([]*domain.User, error) {
@@ -166,4 +171,65 @@ func (r *UsersRepo) UpdateUserDailyMessages(discordID string, dailyMessages int)
 		return fmt.Errorf("failed to update daily messages for DiscordID %s: %w", discordID, err)
 	}
 	return nil
+}
+
+func (r *UsersRepo) AddOrUpdateUserActivity(userID string) *domain.UserActivity {
+	r.activities.Mu.Lock()
+	defer r.activities.Mu.Unlock()
+
+	if r.activities.LimitReachedIDs[userID] {
+		return nil
+	}
+
+	activity, exists := r.activities.Activities[userID]
+	if !exists {
+		activity = &domain.UserActivity{
+			UserID:          userID,
+			LastMessageTime: time.Now(),
+			NextMessageTime: time.Now(),
+			MessageCount:    0,
+		}
+		r.activities.Activities[userID] = activity
+	} else {
+		fmt.Println("Updating activity for user", userID)
+		activity.LastMessageTime = time.Now()
+	}
+
+	return activity
+}
+
+func (r *UsersRepo) Reset() []*domain.UserActivity {
+	r.activities.Mu.Lock()
+	defer r.activities.Mu.Unlock()
+
+	var result []*domain.UserActivity
+	for _, activity := range r.activities.Activities {
+		result = append(result, activity)
+	}
+
+	r.activities.Activities = make(map[string]*domain.UserActivity)
+	r.activities.LimitReachedIDs = make(map[string]bool)
+
+	return result
+}
+
+func (r *UsersRepo) GetMaxMessages() int {
+	r.activities.Mu.Lock()
+	defer r.activities.Mu.Unlock()
+
+	return r.activities.MaxMessages
+}
+
+func (r *UsersRepo) IsLimitReached(userID string) bool {
+	r.activities.Mu.Lock()
+	defer r.activities.Mu.Unlock()
+
+	return r.activities.LimitReachedIDs[userID]
+}
+
+func (r *UsersRepo) MarkLimitReached(userID string) {
+	r.activities.Mu.Lock()
+	defer r.activities.Mu.Unlock()
+
+	r.activities.LimitReachedIDs[userID] = true
 }

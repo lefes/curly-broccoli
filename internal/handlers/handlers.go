@@ -19,9 +19,9 @@ func HandlePoints(msg *domain.Message, svc *services.Services, session *discordg
 		return false
 	}
 
-	activity := svc.UserActivity.AddOrUpdateUser(msg.Author)
+	activity := svc.User.AddOrUpdateUserActivity(msg.Author)
 
-	if svc.UserActivity.IsLimitReached(msg.Author) {
+	if svc.User.IsLimitReached(msg.Author) {
 		fmt.Printf("User %s has reached the daily limit. Skipping.\n", msg.Author)
 		return false
 	}
@@ -39,9 +39,9 @@ func HandlePoints(msg *domain.Message, svc *services.Services, session *discordg
 	activity.NextMessageTime = now.Add(2 * time.Second)
 	activity.MessageCount = activity.MessageCount + 1
 
-	if activity.MessageCount >= svc.UserActivity.GetMaxMessages() {
+	if activity.MessageCount >= svc.User.GetMaxMessages() {
 		fmt.Println("User reached daily limit")
-		svc.UserActivity.MarkLimitReached(msg.Author)
+		svc.User.MarkLimitReached(msg.Author)
 		err := svc.User.UpdateUserPoints(msg.Author, 25)
 		if err != nil {
 			fmt.Printf("Error updating user points in database: %s\n", err)
@@ -56,6 +56,6 @@ func HandlePoints(msg *domain.Message, svc *services.Services, session *discordg
 		return false
 	}
 
-	fmt.Printf("User %s sent a valid message. Points updated.\n", msg.Author)
+	fmt.Printf("User %s sent a valid message. Daily messages updated.\n", msg.Author)
 	return true
 }

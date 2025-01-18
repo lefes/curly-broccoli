@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DB_FILE="./data/bot.db"
+DB_FILE=${DB_PATH}
 
 # Проверяем, существует ли файл базы данных
 until [ -f "$DB_FILE" ]; do

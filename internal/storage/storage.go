@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/lefes/curly-broccoli/pkg/logging"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/sirupsen/logrus"
 )
@@ -12,12 +11,6 @@ import (
 var logger *logrus.Entry
 
 var db *sql.DB
-
-func InitLogger() {
-	if logger == nil {
-		logger = logging.GetLogger("storage")
-	}
-}
 
 func InitDB(filePath string) (*sql.DB, error) {
 	var err error
@@ -32,19 +25,6 @@ func InitDB(filePath string) (*sql.DB, error) {
 
 	logger.Info("Database connection initialized.")
 	return db, nil
-}
-
-func ExecQuery(query string, args ...interface{}) error {
-	_, err := db.Exec(query, args...)
-	return err
-}
-
-func QueryRow(query string, args ...interface{}) *sql.Row {
-	return db.QueryRow(query, args...)
-}
-
-func Query(query string, args ...interface{}) (*sql.Rows, error) {
-	return db.Query(query, args...)
 }
 
 func CloseDB() error {

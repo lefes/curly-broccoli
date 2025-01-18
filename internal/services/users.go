@@ -44,3 +44,23 @@ func (s *UserService) UpdateUserRespect(discordID string, respect int) error {
 func (s *UserService) UpdateUserDailyMessages(discordID string, dailyMessages int) error {
 	return s.repo.UpdateUserDailyMessages(discordID, dailyMessages)
 }
+
+func (s *UserService) AddOrUpdateUserActivity(userID string) *domain.UserActivity {
+	return s.repo.AddOrUpdateUserActivity(userID)
+}
+
+func (s *UserService) MarkLimitReached(userID string) {
+	s.repo.MarkLimitReached(userID)
+}
+
+func (s *UserService) Reset() []*domain.UserActivity {
+	return s.repo.Reset()
+}
+
+func (s *UserService) GetMaxMessages() int {
+	return s.repo.GetMaxMessages()
+}
+
+func (s *UserService) IsLimitReached(userID string) bool {
+	return s.repo.IsLimitReached(userID)
+}

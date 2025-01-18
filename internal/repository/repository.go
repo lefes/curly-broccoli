@@ -16,6 +16,11 @@ type Users interface {
 	UpdateUserPoints(discordID string, points int) error
 	UpdateUserRespect(discordID string, respect int) error
 	UpdateUserDailyMessages(discordID string, dailyMessages int) error
+	AddOrUpdateUserActivity(userID string) *domain.UserActivity
+	Reset() []*domain.UserActivity
+	MarkLimitReached(userID string)
+	GetMaxMessages() int
+	IsLimitReached(userdID string) bool
 }
 
 type Transactions interface {
@@ -34,29 +39,19 @@ type Role interface {
 	GetUserRole(userID string) (int, error)
 }
 
-type UserActivity interface {
-	AddOrUpdateUser(userID string) *domain.UserActivity
-	MarkLimitReached(userID string)
-	Reset() []*domain.UserActivity
-	GetMaxMessages() int
-	IsLimitReached(userdID string) bool
-}
-
 type Repositories struct {
-	User         Users
-	Transaction  Transactions
-	Discord      Discord
-	Role         Role
-	UserActivity UserActivity
+	User        Users
+	Transaction Transactions
+	Discord     Discord
+	Role        Role
 }
 
 func NewRepository(db *sql.DB, discordSession *discordgo.Session) *Repositories {
 	activities := domain.NewUserActivities(25)
 	return &Repositories{
-		User:         NewUsersRepo(db),
-		Transaction:  NewTransactionRepo(db),
-		Discord:      NewDiscordRepo(discordSession),
-		Role:         NewRoleRepo(db),
-		UserActivity: NewUserActivityRepo(activities),
+		User:        NewUsersRepo(db, activities),
+		Transaction: NewTransactionRepo(db),
+		Discord:     NewDiscordRepo(discordSession),
+		Role:        NewRoleRepo(db),
 	}
 }
