@@ -33,12 +33,6 @@ type Transactions interface {
 	GetAllTransactions() ([]*domain.Transaction, error)
 }
 
-type Discord interface {
-	//GetAllUsers(guildID string) (*domain.DiscordMembers, error)
-	//BotRegister() (error, *discordgo.Session)
-	Open() (*discordgo.Session, error)
-}
-
 type Roles interface {
 	PromoteUser(userID string) error
 	DemoteUser(userID string) error
@@ -54,7 +48,6 @@ type MessageHandler interface {
 type Services struct {
 	User        Users
 	Transaction Transactions
-	Discord     Discord
 	Roles       Roles
 	Weather     Weather
 	MsgHandler  MessageHandler
@@ -63,14 +56,12 @@ type Services struct {
 func NewServices(repos *repository.Repositories, conf *config.Configs) *Services {
 	userService := NewUsersService(repos.User)
 	transactionService := NewTransactionService(repos.Transaction)
-	discordService := NewDiscordService(&conf.Discord)
 	rolesService := NewRoleService(repos.Role)
 	weatherService := NewWeatherService(&conf.Weather)
 	msgHandlerService := NewMessageHandlerService()
 	return &Services{
 		User:        userService,
 		Transaction: transactionService,
-		Discord:     discordService,
 		Roles:       rolesService,
 		Weather:     weatherService,
 		MsgHandler:  msgHandlerService,

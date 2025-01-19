@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"log"
 	"os"
 	"os/signal"
 
@@ -18,38 +17,31 @@ import (
 
 func init() { flag.Parse() }
 
-func loggersInit() {
-	logging.InitLogger()
-	mLogger = logging.GetLogger("main")
-	sLogger = logging.GetLogger("storage")
-	dLogger = logging.GetLogger("discord")
-	//wLogger := logging.GetLogger("weather")
-}
-
 func main() {
-	loggersInit()
+	logging.InitLogger()
 	mainConfig := config.Init()
-	mLogger.Info("Starting application")
+	dSession := discordapi.DiscordSession{}
+	err := dSession.Start(&mainConfig.Discord)
+	if err != nil {
+		logging.GetLogger("bot").Fatalf("Failed to open discord session: %v", err)
+	}
+	logger := logging.GetLogger("bot")
+	logger.Info("Starting application")
 
 	db, err := storage.InitDB(dbPath)
 	if err != nil {
-		sLogger.Fatalf("Failed to initialize database: %v", err)
+		logger.Fatalf("Failed to initialize database: %v", err)
 	}
-	sLogger.Info("Database connection initialized")
+	logger.Info("Database connection initialized")
 
 	repo := repository.NewRepository(db)
 	services := services.NewServices(repo, mainConfig)
-	session, err := services.Discord.Open()
+	err = dSession.Start(&mainConfig.Discord)
 	if err != nil {
-		dLogger.Errorf("Failed to open discord session: %v", err)
+		logger.Errorf("Failed to open discord session: %v", err)
 	}
-	defer session.Close()
-	/*  err, _ = services.Discord.BotRegister() */
-	/* if err != nil { */
-	/* dLogger.Fatalf("Failed to register bot: %v", err) */
-	/* } */
 
-	handlers := discordapi.NewCommandHandlers(services)
+	handlers := discordapi.NewCommandHandlers(services, &dSession)
 	minValue := float64(1)
 	maxValue := float64(7)
 	commands := []domain.SlashCommand{
@@ -76,23 +68,22 @@ func main() {
 		},
 	}
 
-	registeredCommands, err := discordapi.RegisterCommands(session, commands, mainConfig.Discord.GuildID)
+	registeredCommands, err := dSession.RegisterCommands(commands, mainConfig.Discord.GuildID)
 	if err != nil {
-		dLogger.Fatalf("Failed to register commands: %v", err)
+		logger.Fatalf("Failed to register commands: %v", err)
 	}
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
-	mLogger.Info("Press Ctrl+C to exit")
+	logger.Info("Press Ctrl+C to exit")
 	<-stop
+	dSession.Stop()
 
 	if *RemoveCommands {
-		mLogger.Println("Removing commands...")
-		for _, v := range registeredCommands {
-			err := session.ApplicationCommandDelete(session.State.User.ID, GuildID, v.ID)
-			if err != nil {
-				log.Panicf("Cannot delete '%v' command: %v", v.Name, err)
-			}
+		logger.Println("Removing commands...")
+		err := dSession.DeleteCommands(registeredCommands, mainConfig.Discord.GuildID)
+		if err != nil {
+			logger.Fatalf("Failed to remove commands: %v", err)
 		}
 	}
 }

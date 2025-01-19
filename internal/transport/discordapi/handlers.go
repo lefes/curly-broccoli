@@ -9,15 +9,17 @@ import (
 
 type CommandHandlers struct {
 	services *services.Services
+	dSession *DiscordSession
 }
 
-func NewCommandHandlers(services *services.Services) *CommandHandlers {
+func NewCommandHandlers(services *services.Services, dSession *DiscordSession) *CommandHandlers {
 	return &CommandHandlers{
 		services: services,
+		dSession: dSession,
 	}
 }
 
-func (h *CommandHandlers) HandleWeatherCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
+func (cmdH *CommandHandlers) HandleWeatherCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	options := i.ApplicationCommandData().Options
 
 	city := ""
@@ -31,7 +33,7 @@ func (h *CommandHandlers) HandleWeatherCommand(s *discordgo.Session, i *discordg
 		}
 	}
 
-	weather, err := h.services.Weather.GetWeather(city, days)
+	weather, err := cmdH.services.Weather.GetWeather(city, days)
 	if err != nil {
 		errMsg := fmt.Sprintf("Failed to fetch weather data: %v", err)
 		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{

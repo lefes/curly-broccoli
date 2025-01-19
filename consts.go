@@ -11,9 +11,6 @@ var (
 	discordUsers   = make(map[string]bool)
 	dbUsers        = make(map[string]bool)
 	dbPath         string
-	wLogger        *logrus.Entry
-	mLogger        *logrus.Entry
-	sLogger        *logrus.Entry
-	dLogger        *logrus.Entry
+	logger         *logrus.Entry
 	RemoveCommands = flag.Bool("rmcmd", true, "Remove all commands after shutdowning or not")
 )
