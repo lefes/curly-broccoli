@@ -23,7 +23,6 @@ func InitDB(filePath string) (*sql.DB, error) {
 		return nil, fmt.Errorf("error connecting to database: %v", err)
 	}
 
-	logger.Info("Database connection initialized.")
 	return db, nil
 }
 

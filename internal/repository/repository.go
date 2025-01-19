@@ -3,7 +3,6 @@ package repository
 import (
 	"database/sql"
 
-	"github.com/bwmarrin/discordgo"
 	"github.com/lefes/curly-broccoli/internal/domain"
 )
 
@@ -29,10 +28,6 @@ type Transactions interface {
 	GetAllTransactions() ([]*domain.Transaction, error)
 }
 
-type Discord interface {
-	GetAllUsers(guildID string) (*domain.DiscordMembers, error)
-}
-
 type Role interface {
 	PromoteUser(userID string) error
 	DemoteUser(userID string) error
@@ -42,16 +37,14 @@ type Role interface {
 type Repositories struct {
 	User        Users
 	Transaction Transactions
-	Discord     Discord
 	Role        Role
 }
 
-func NewRepository(db *sql.DB, discordSession *discordgo.Session) *Repositories {
+func NewRepository(db *sql.DB) *Repositories {
 	activities := domain.NewUserActivities(25)
 	return &Repositories{
 		User:        NewUsersRepo(db, activities),
 		Transaction: NewTransactionRepo(db),
-		Discord:     NewDiscordRepo(discordSession),
 		Role:        NewRoleRepo(db),
 	}
 }

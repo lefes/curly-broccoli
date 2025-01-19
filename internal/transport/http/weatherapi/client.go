@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+
+	"github.com/lefes/curly-broccoli/internal/domain"
 )
 
 type Client struct {
@@ -20,7 +22,7 @@ func NewClient(apiKey, baseUrl string) *Client {
 	}
 }
 
-func (c *Client) CurrentWeather(city string) (*WeatherResponse, error) {
+func (c *Client) CurrentWeather(city string) (*domain.WeatherResponse, error) {
 	cityEncoded := url.QueryEscape(city)
 	url := fmt.Sprintf("%s/%s/today?key=%s&unitGroup=metric&include=current&contentType=json&lang=ru", c.BaseURL, cityEncoded, c.APIKey)
 
@@ -34,7 +36,7 @@ func (c *Client) CurrentWeather(city string) (*WeatherResponse, error) {
 		return nil, fmt.Errorf("bad response: %s", resp.Status)
 	}
 
-	var result WeatherResponse
+	var result domain.WeatherResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
@@ -42,7 +44,7 @@ func (c *Client) CurrentWeather(city string) (*WeatherResponse, error) {
 	return &result, nil
 }
 
-func (c *Client) ForecastWeather(city string, days int) (*WeatherResponse, error) {
+func (c *Client) ForecastWeather(city string, days int) (*domain.WeatherResponse, error) {
 	cityEncoded := url.QueryEscape(city)
 	if days < 1 || days > 7 {
 		return nil, fmt.Errorf("days must be between 1 and 7")
@@ -61,7 +63,7 @@ func (c *Client) ForecastWeather(city string, days int) (*WeatherResponse, error
 		return nil, fmt.Errorf("bad response: %s", resp.Status)
 	}
 
-	var result WeatherResponse
+	var result domain.WeatherResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}

@@ -1,9 +1,10 @@
 package services
 
 import (
+	"github.com/bwmarrin/discordgo"
+	"github.com/lefes/curly-broccoli/config"
 	"github.com/lefes/curly-broccoli/internal/domain"
 	"github.com/lefes/curly-broccoli/internal/repository"
-	"github.com/lefes/curly-broccoli/internal/transport/http/weatherapi"
 )
 
 type Users interface {
@@ -22,9 +23,8 @@ type Users interface {
 	IsLimitReached(userdID string) bool
 }
 
-type WeatherAPI interface {
-	CurrentWeather(city string) (*weatherapi.WeatherResponse, error)
-	ForecastWeather(city string, days int) (*weatherapi.WeatherResponse, error)
+type Weather interface {
+	GetWeather(city string, days int) (*discordgo.MessageEmbed, error)
 }
 
 type Transactions interface {
@@ -34,7 +34,9 @@ type Transactions interface {
 }
 
 type Discord interface {
-	GetAllUsers(guildID string) (*domain.DiscordMembers, error)
+	//GetAllUsers(guildID string) (*domain.DiscordMembers, error)
+	//BotRegister() (error, *discordgo.Session)
+	Open() (*discordgo.Session, error)
 }
 
 type Roles interface {
@@ -43,25 +45,34 @@ type Roles interface {
 	GetUserRole(userID string) (int, error)
 }
 
+type MessageHandler interface {
+	HandleMessage(message *domain.Message, ctx *MessageHandlerContext)
+	AddHandler(handler func(*domain.Message, *MessageHandlerContext) bool)
+	HandlePoints(msg *domain.Message, ctx *MessageHandlerContext) bool
+}
+
 type Services struct {
 	User        Users
 	Transaction Transactions
 	Discord     Discord
 	Roles       Roles
-	WAPI        WeatherAPI
+	Weather     Weather
+	MsgHandler  MessageHandler
 }
 
-func NewServices(repos *repository.Repositories, wClient *weatherapi.Client) *Services {
+func NewServices(repos *repository.Repositories, conf *config.Configs) *Services {
 	userService := NewUsersService(repos.User)
 	transactionService := NewTransactionService(repos.Transaction)
-	discordService := NewDiscordService(repos.Discord)
+	discordService := NewDiscordService(&conf.Discord)
 	rolesService := NewRoleService(repos.Role)
-	weatherService := NewWeatherService(wClient)
+	weatherService := NewWeatherService(&conf.Weather)
+	msgHandlerService := NewMessageHandlerService()
 	return &Services{
 		User:        userService,
 		Transaction: transactionService,
 		Discord:     discordService,
 		Roles:       rolesService,
-		WAPI:        weatherService,
+		Weather:     weatherService,
+		MsgHandler:  msgHandlerService,
 	}
 }

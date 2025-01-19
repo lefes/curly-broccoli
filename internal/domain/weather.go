@@ -1,4 +1,4 @@
-package weatherapi
+package domain
 
 type WeatherResponse struct {
 	ResolvedAddress   string        `json:"resolvedAddress"`
