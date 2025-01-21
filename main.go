@@ -48,7 +48,7 @@ func main() {
 	}
 	logger.Info("Users sync has been completed")
 
-	handlers := handlers.NewCommandHandlers(services, &dSession)
+	handlers := handlers.NewCommandHandlers(services, &dSession, repo)
 	minValue := float64(1)
 	maxValue := float64(7)
 	commands := []domain.SlashCommand{
@@ -81,7 +81,16 @@ func main() {
 	}
 
 	dSession.WatchMessages(func(m *discordgo.MessageCreate) {
-		logger.Infof("Message received: %s", m.Content)
+		msg := domain.Message{
+			Raw:       m,
+			ID:        m.ID,
+			Username:  m.Author.Username,
+			Content:   m.Content,
+			Author:    m.Author.ID,
+			Channel:   m.ChannelID,
+			ChannelID: m.ChannelID,
+		}
+		handlers.HandlePoints(&msg)
 	})
 
 	stop := make(chan os.Signal, 1)
