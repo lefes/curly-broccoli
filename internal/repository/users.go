@@ -22,8 +22,8 @@ func NewUsersRepo(db *sql.DB, a *domain.UserActivities) *UsersRepo {
 
 func (r *UsersRepo) GetAllUsers() ([]*domain.User, error) {
 	query := `
-		SELECT id, discord_id, username, role_id, points, respect, daily_messages, last_activity
-		FROM users
+	SELECT id, discord_id, username, role_id, points, respect, daily_messages, last_activity
+	FROM users
 	`
 
 	rows, err := r.db.Query(query)

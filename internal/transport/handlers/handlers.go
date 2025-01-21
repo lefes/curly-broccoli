@@ -1,18 +1,19 @@
-package discordapi
+package handlers
 
 import (
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/lefes/curly-broccoli/internal/services"
+	"github.com/lefes/curly-broccoli/internal/transport/discordapi"
 )
 
 type CommandHandlers struct {
 	services *services.Services
-	dSession *DiscordSession
+	dSession *discordapi.DiscordSession
 }
 
-func NewCommandHandlers(services *services.Services, dSession *DiscordSession) *CommandHandlers {
+func NewCommandHandlers(services *services.Services, dSession *discordapi.DiscordSession) *CommandHandlers {
 	return &CommandHandlers{
 		services: services,
 		dSession: dSession,

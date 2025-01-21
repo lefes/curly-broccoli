@@ -5,6 +5,7 @@ import (
 	"github.com/lefes/curly-broccoli/config"
 	"github.com/lefes/curly-broccoli/internal/domain"
 	"github.com/lefes/curly-broccoli/internal/repository"
+	"github.com/lefes/curly-broccoli/internal/transport/discordapi"
 )
 
 type Users interface {
@@ -39,6 +40,10 @@ type Roles interface {
 	GetUserRole(userID string) (int, error)
 }
 
+type Discord interface {
+	SyncUsers() error
+}
+
 type MessageHandler interface {
 	HandleMessage(message *domain.Message, ctx *MessageHandlerContext)
 	AddHandler(handler func(*domain.Message, *MessageHandlerContext) bool)
@@ -51,19 +56,22 @@ type Services struct {
 	Roles       Roles
 	Weather     Weather
 	MsgHandler  MessageHandler
+	Discord     Discord
 }
 
-func NewServices(repos *repository.Repositories, conf *config.Configs) *Services {
+func NewServices(repos *repository.Repositories, conf *config.Configs, s *discordapi.DiscordSession) *Services {
 	userService := NewUsersService(repos.User)
 	transactionService := NewTransactionService(repos.Transaction)
 	rolesService := NewRoleService(repos.Role)
 	weatherService := NewWeatherService(&conf.Weather)
 	msgHandlerService := NewMessageHandlerService()
+	discordService := NewDiscordService(&conf.Discord, s, repos)
 	return &Services{
 		User:        userService,
 		Transaction: transactionService,
 		Roles:       rolesService,
 		Weather:     weatherService,
 		MsgHandler:  msgHandlerService,
+		Discord:     discordService,
 	}
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/lefes/curly-broccoli/internal/services"
 	"github.com/lefes/curly-broccoli/internal/storage"
 	"github.com/lefes/curly-broccoli/internal/transport/discordapi"
+	"github.com/lefes/curly-broccoli/internal/transport/handlers"
 )
 
 func init() { flag.Parse() }
@@ -28,20 +29,26 @@ func main() {
 	logger := logging.GetLogger("bot")
 	logger.Info("Starting application")
 
-	db, err := storage.InitDB(dbPath)
+	db, err := storage.InitDB(mainConfig.Storage.DbPath)
 	if err != nil {
 		logger.Fatalf("Failed to initialize database: %v", err)
 	}
 	logger.Info("Database connection initialized")
 
-	repo := repository.NewRepository(db)
-	services := services.NewServices(repo, mainConfig)
 	err = dSession.Start(&mainConfig.Discord)
 	if err != nil {
 		logger.Errorf("Failed to open discord session: %v", err)
 	}
 
-	handlers := discordapi.NewCommandHandlers(services, &dSession)
+	repo := repository.NewRepository(db)
+	services := services.NewServices(repo, mainConfig, &dSession)
+	err = services.Discord.SyncUsers()
+	if err != nil {
+		logger.Errorf("Failed to sync users: %v", err)
+	}
+	logger.Info("Users sync has been completed")
+
+	handlers := handlers.NewCommandHandlers(services, &dSession)
 	minValue := float64(1)
 	maxValue := float64(7)
 	commands := []domain.SlashCommand{
@@ -73,12 +80,17 @@ func main() {
 		logger.Fatalf("Failed to register commands: %v", err)
 	}
 
+	dSession.WatchMessages(func(m *discordgo.MessageCreate) {
+		logger.Infof("Message received: %s", m.Content)
+	})
+
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
 	logger.Info("Press Ctrl+C to exit")
 	<-stop
-	dSession.Stop()
 
+	// Logic after bot has been stopped with Ctrl+C
+	dSession.Stop()
 	if *RemoveCommands {
 		logger.Println("Removing commands...")
 		err := dSession.DeleteCommands(registeredCommands, mainConfig.Discord.GuildID)

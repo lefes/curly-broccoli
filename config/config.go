@@ -13,6 +13,7 @@ var (
 	botToken      string
 	cLogger       *logrus.Entry
 	GuildID       = "147313959819542528"
+	dbPath        string
 )
 
 func Init() *Configs {
@@ -27,6 +28,7 @@ func parseConfig(conf *Configs) {
 	conf.Weather.ApiUrl = getEnvOptional("WEATHER_API_URL", weatherApiUrl)
 	conf.Discord.BotToken = getEnv("DISCORD_BOT_TOKEN")
 	conf.Discord.GuildID = getEnvOptional("DISCORD_GUILD_ID", GuildID)
+	conf.Storage.DbPath = getEnvOptional("DB_PATH", "data/bot.db")
 }
 
 func getEnv(key string) string {

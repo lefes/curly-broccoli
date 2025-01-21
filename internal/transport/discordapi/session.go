@@ -21,9 +21,24 @@ func (ds *DiscordSession) Start(dc *config.DiscordService) error {
 	if err != nil {
 		return fmt.Errorf("Error occured while opening discord session: %s", err)
 	}
+
 	return nil
 }
 
 func (ds *DiscordSession) Stop() error {
 	return ds.s.Close()
+}
+
+func (ds *DiscordSession) WatchMessages(handler func(*discordgo.MessageCreate)) {
+	ds.s.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
+		handler(m)
+	})
+}
+
+func (ds *DiscordSession) GetAllUsers(guildID string) (*DiscordMembers, error) {
+	members, err := ds.s.GuildMembers(guildID, "", 1000)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get guild members: %v", err)
+	}
+	return &DiscordMembers{Members: members}, nil
 }
