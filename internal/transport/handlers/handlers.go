@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/lefes/curly-broccoli/internal/domain"
@@ -62,45 +61,17 @@ func (cmdH *CommandHandlers) HandleWeatherCommand(s *discordgo.Session, i *disco
 	}
 }
 
-// Move business logic to discrord service
 func (cmdH *CommandHandlers) HandlePoints(msg *domain.Message) bool {
 	if msg.Raw.Author.Bot {
 		return false
 	}
 
-	if len(msg.Content) < 5 {
-		fmt.Println("Message too short")
+	activity, canSend := cmdH.services.User.CanSendMessage(msg)
+	if !canSend {
 		return false
 	}
 
-	activity := cmdH.repo.User.AddOrUpdateUserActivity(msg.Author)
-
-	if cmdH.services.User.IsLimitReached(msg.Author) {
-		fmt.Printf("User %s has reached the daily limit. Skipping.\n", msg.Username)
-		return false
-	}
-
-	now := time.Now()
-
-	if now.Before(activity.NextMessageTime) {
-		return false
-	}
-
-	activity.LastMessageTime = now
-	activity.NextMessageTime = now.Add(2 * time.Second)
-	activity.MessageCount = activity.MessageCount + 1
-
-	if activity.MessageCount >= cmdH.repo.User.GetMaxMessages() {
-		fmt.Printf("User %s reached daily limit\n", msg.Username)
-		cmdH.repo.User.MarkLimitReached(msg.Author)
-		err := cmdH.repo.User.UpdateUserPoints(msg.Author, 25)
-		if err != nil {
-			fmt.Printf("Error updating user points in database: %s\n", err)
-			return false
-		}
-		fmt.Printf("User %s received 25 points\n", msg.Username)
-		return true
-	}
+	cmdH.services.User.IncrementUserMessageCount(activity)
 
 	err := cmdH.repo.User.UpdateUserDailyMessages(msg.Author, activity.MessageCount)
 	if err != nil {

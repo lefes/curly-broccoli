@@ -58,7 +58,7 @@ func (ds *DiscordService) SyncUsers() error {
 			if err != nil {
 				return fmt.Errorf("Error adding user to database: %w", err)
 			} else {
-				fmt.Println("Added user to database:", member.User.ID)
+				fmt.Println("Added user to database:", member.User.Username)
 			}
 		}
 	}

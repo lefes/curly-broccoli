@@ -191,7 +191,6 @@ func (r *UsersRepo) AddOrUpdateUserActivity(userID string) *domain.UserActivity 
 		}
 		r.activities.Activities[userID] = activity
 	} else {
-		fmt.Println("Updating activity for user", userID)
 		activity.LastMessageTime = time.Now()
 	}
 

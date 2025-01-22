@@ -22,6 +22,8 @@ type Users interface {
 	MarkLimitReached(userID string)
 	GetMaxMessages() int
 	IsLimitReached(userdID string) bool
+	CanSendMessage(msg *domain.Message) (*domain.UserActivity, bool)
+	IncrementUserMessageCount(activity *domain.UserActivity)
 }
 
 type Weather interface {
