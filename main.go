@@ -4,6 +4,7 @@ import (
 	"flag"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/lefes/curly-broccoli/config"
@@ -79,6 +80,23 @@ func main() {
 	if err != nil {
 		logger.Fatalf("Failed to register commands: %v", err)
 	}
+
+	go func() {
+		for {
+			now := time.Now()
+			nextDay := now.Add(24 * time.Hour).Truncate(24 * time.Hour)
+			durationUntilNextDay := time.Until(nextDay)
+
+			time.Sleep(durationUntilNextDay)
+
+			err := services.User.Reset()
+			if err != nil {
+				logger.Errorf("Failed to reset daily limits: %v", err)
+			} else {
+				logger.Info("Daily limits reset successfully")
+			}
+		}
+	}()
 
 	dSession.WatchMessages(func(m *discordgo.MessageCreate) {
 		msg := domain.Message{
