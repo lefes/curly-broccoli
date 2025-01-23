@@ -43,14 +43,14 @@ func main() {
 
 	repo := repository.NewRepository(db)
 	services := services.NewServices(repo, mainConfig, &dSession)
-	err = services.Discord.SyncUsers()
+	err = services.Discord.SyncUsers() // я бы перенёс это в суточный таймер
 	if err != nil {
 		logger.Errorf("Failed to sync users: %v", err)
 	}
 	logger.Info("Users sync has been completed")
 
 	handlers := handlers.NewCommandHandlers(services, &dSession, repo)
-	minValue := float64(1)
+	minValue := float64(1) // надо вынести в транспорт
 	maxValue := float64(7)
 	commands := []domain.SlashCommand{
 		{
@@ -81,7 +81,7 @@ func main() {
 		logger.Fatalf("Failed to register commands: %v", err)
 	}
 
-	go func() {
+	go func() { // тоже транспортный уровень входа в программу, что-то типо пакета cron
 		for {
 			now := time.Now()
 			nextDay := now.Add(24 * time.Hour).Truncate(24 * time.Hour)
@@ -98,7 +98,7 @@ func main() {
 		}
 	}()
 
-	dSession.WatchMessages(func(m *discordgo.MessageCreate) {
+	dSession.WatchMessages(func(m *discordgo.MessageCreate) { // унести туда же где и обработчики команд
 		msg := domain.Message{
 			Raw:       m,
 			ID:        m.ID,

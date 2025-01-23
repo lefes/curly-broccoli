@@ -13,7 +13,7 @@ import (
 type CommandHandlers struct {
 	services *services.Services
 	dSession *discordapi.DiscordSession
-	repo     *repository.Repositories
+	repo     *repository.Repositories // вот это нужно изи убрать
 }
 
 func NewCommandHandlers(services *services.Services, dSession *discordapi.DiscordSession, r *repository.Repositories) *CommandHandlers {

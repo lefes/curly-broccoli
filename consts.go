@@ -13,3 +13,5 @@ var (
 	logger         *logrus.Entry
 	RemoveCommands = flag.Bool("rmcmd", true, "Remove all commands after shutdowning or not")
 )
+
+// Убери это в config
