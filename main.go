@@ -8,6 +8,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/lefes/curly-broccoli/config"
+	"github.com/lefes/curly-broccoli/internal/cron"
 	"github.com/lefes/curly-broccoli/internal/domain"
 	"github.com/lefes/curly-broccoli/internal/logging"
 	"github.com/lefes/curly-broccoli/internal/repository"
@@ -43,11 +44,11 @@ func main() {
 
 	repo := repository.NewRepository(db)
 	services := services.NewServices(repo, mainConfig, &dSession)
-	err = services.Discord.SyncUsers() // я бы перенёс это в суточный таймер
 	if err != nil {
 		logger.Errorf("Failed to sync users: %v", err)
 	}
-	logger.Info("Users sync has been completed")
+	cronService := cron.NewCronService(services)
+	cronService.Start()
 
 	handlers := handlers.NewCommandHandlers(services, &dSession, repo)
 	minValue := float64(1) // надо вынести в транспорт
@@ -80,23 +81,6 @@ func main() {
 	if err != nil {
 		logger.Fatalf("Failed to register commands: %v", err)
 	}
-
-	go func() { // тоже транспортный уровень входа в программу, что-то типо пакета cron
-		for {
-			now := time.Now()
-			nextDay := now.Add(24 * time.Hour).Truncate(24 * time.Hour)
-			durationUntilNextDay := time.Until(nextDay)
-
-			time.Sleep(durationUntilNextDay)
-
-			err := services.User.Reset()
-			if err != nil {
-				logger.Errorf("Failed to reset daily limits: %v", err)
-			} else {
-				logger.Info("Daily limits reset successfully")
-			}
-		}
-	}()
 
 	dSession.WatchMessages(func(m *discordgo.MessageCreate) { // унести туда же где и обработчики команд
 		msg := domain.Message{
