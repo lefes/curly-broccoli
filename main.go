@@ -4,7 +4,6 @@ import (
 	"flag"
 	"os"
 	"os/signal"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/lefes/curly-broccoli/config"
@@ -50,33 +49,9 @@ func main() {
 	cronService := cron.NewCronService(services)
 	cronService.Start()
 
-	handlers := handlers.NewCommandHandlers(services, &dSession, repo)
-	minValue := float64(1) // надо вынести в транспорт
-	maxValue := float64(7)
-	commands := []domain.SlashCommand{
-		{
-			Name:        "weather",
-			Description: "Get weather information for a city",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Name:        "city",
-					Description: "City to get weather information for",
-					Type:        discordgo.ApplicationCommandOptionString,
-					Required:    true,
-				},
-				{
-					Name:        "days",
-					Description: "Number of days for the forecast (default: 1)",
-					Type:        discordgo.ApplicationCommandOptionInteger,
-					Required:    false,
-					MinValue:    &minValue,
-					MaxValue:    maxValue,
-				},
-			},
-			Handler: handlers.HandleWeatherCommand,
-		},
-	}
+	handlers := handlers.NewCommandHandlers(services, repo)
 
+	commands := handlers.CommandsInit()
 	registeredCommands, err := dSession.RegisterCommands(commands, mainConfig.Discord.GuildID)
 	if err != nil {
 		logger.Fatalf("Failed to register commands: %v", err)
@@ -92,7 +67,7 @@ func main() {
 			Channel:   m.ChannelID,
 			ChannelID: m.ChannelID,
 		}
-		handlers.HandlePoints(&msg)
+		handlers.HandleMessagePoints(&msg)
 	})
 
 	stop := make(chan os.Signal, 1)
