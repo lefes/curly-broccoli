@@ -24,6 +24,7 @@ func init() {
 	logger = logging.NewLogger()
 }
 
+// TODO: Some way of checking day points limit
 func main() {
 	mainConfig := config.Init()
 	dSession := discordapi.DiscordSession{}
@@ -53,7 +54,7 @@ func main() {
 	cronService := cron.NewCronService(services, logger)
 	cronService.Start()
 
-	handlers := handlers.NewCommandHandlers(services, repo)
+	handlers := handlers.NewCommandHandlers(services, repo, dSession.GetSession(), logger)
 
 	commands := handlers.CommandsInit()
 
@@ -62,7 +63,7 @@ func main() {
 		logger.Fatalf("Failed to register commands: %v", err)
 	}
 
-	dSession.WatchMessages(func(m *discordgo.MessageCreate) { // унести туда же где и обработчики команд
+	dSession.WatchMessages(func(m *discordgo.MessageCreate) { // унести туда же где и обработчики команд (Не имею пока понятия как это сделать :( )
 		msg := domain.Message{
 			Raw:       m,
 			ID:        m.ID,
@@ -75,9 +76,7 @@ func main() {
 		handlers.HandleMessagePoints(&msg)
 	})
 
-	/*  dSession.WatchReactions(func(r *discordgo.MessageReactionAdd) { */
-	/* handlers.HandleReactionPoints(r) */
-	/* }) */
+	dSession.WatchReactions(handlers.HandleReactionPointsAdd, handlers.HandleReactionPointsRemove)
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)

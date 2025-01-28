@@ -11,13 +11,16 @@ type Users interface {
 	CreateUser(user *domain.User) error
 	GetAllUsers() ([]*domain.User, error)
 	DeleteUser(userId string) error
-	UpdateUserPoints(discordID string, points int) error
+	AddUserPoints(discordID string, points int) error
+	RemoveUserPoints(discordID string, points int) error
 	UpdateUserDailyMessages(discordID string, dailyMessages int) error
 	AddOrUpdateUserActivity(userID string) *domain.UserActivity
 	Reset() []*domain.UserActivity
 	MarkLimitReached(userID string)
 	GetMaxMessages() int
 	IsLimitReached(userdID string) bool
+	AddDayPoints(discordID string, points int) error
+	RemoveDayPoints(discordID string, points int) error
 }
 
 type Repositories struct {

@@ -4,20 +4,18 @@ import (
 	"os"
 
 	"github.com/lefes/curly-broccoli/internal/logging"
-	"github.com/sirupsen/logrus"
 )
 
 var (
 	weatherApiKey string
 	weatherApiUrl = "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline"
 	botToken      string
-	cLogger       *logrus.Entry
 	GuildID       = "147313959819542528"
 	dbPath        string
+	logger        *logging.Logger
 )
 
 func Init() *Configs {
-	cLogger = logging.GetLogger("config")
 	conf := &Configs{}
 	parseConfig(conf)
 	return conf
@@ -34,7 +32,7 @@ func parseConfig(conf *Configs) {
 func getEnv(key string) string {
 	value, ok := os.LookupEnv(key)
 	if !ok {
-		cLogger.Fatalf("Missing %s environment variable", key)
+		logger.Fatalf("Missing %s environment variable", key)
 	}
 	return value
 }

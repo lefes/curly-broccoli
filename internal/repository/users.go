@@ -86,9 +86,24 @@ func (r *UsersRepo) DeleteUser(userID string) error {
 	return nil
 }
 
-func (r *UsersRepo) UpdateUserPoints(discordID string, points int) error {
+func (r *UsersRepo) AddUserPoints(discordID string, points int) error {
 	query := "UPDATE users SET points = points + ? WHERE discord_id = ?"
 	_, err := r.db.Exec(query, points, discordID)
+	if err != nil {
+		return r.logger.Errorf("failed to update points for DiscordID %s: %w", discordID, err)
+	}
+	return nil
+}
+
+func (r *UsersRepo) RemoveUserPoints(discordID string, points int) error {
+	query := `
+		UPDATE users
+		SET points = CASE
+			WHEN points - ? < 0 THEN 0
+			ELSE points - ?
+		END
+		WHERE discord_id = ?`
+	_, err := r.db.Exec(query, points, points, discordID)
 	if err != nil {
 		return r.logger.Errorf("failed to update points for DiscordID %s: %w", discordID, err)
 	}
@@ -100,6 +115,30 @@ func (r *UsersRepo) UpdateUserDailyMessages(discordID string, dailyMessages int)
 	_, err := r.db.Exec(query, dailyMessages, discordID)
 	if err != nil {
 		return r.logger.Errorf("failed to update daily messages for DiscordID %s: %w", discordID, err)
+	}
+	return nil
+}
+
+func (r *UsersRepo) AddDayPoints(discordID string, points int) error {
+	query := "UPDATE users SET points_today = points_today + ? WHERE discord_id = ?"
+	_, err := r.db.Exec(query, points, discordID)
+	if err != nil {
+		return r.logger.Errorf("failed to update today points for DiscordID %s: %w", discordID, err)
+	}
+	return nil
+}
+
+func (r *UsersRepo) RemoveDayPoints(discordID string, points int) error {
+	query := `
+		UPDATE users
+		SET points_today = CASE
+			WHEN points_today - ? < 0 THEN 0
+			ELSE points_today - ?
+		END
+		WHERE discord_id = ?`
+	_, err := r.db.Exec(query, points, points, discordID)
+	if err != nil {
+		return r.logger.Errorf("failed to update today points for DiscordID %s: %w", discordID, err)
 	}
 	return nil
 }

@@ -1,9 +1,9 @@
 package services
 
 import (
-	"fmt"
 	"time"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/lefes/curly-broccoli/internal/domain"
 	"github.com/lefes/curly-broccoli/internal/logging"
 	"github.com/lefes/curly-broccoli/internal/repository"
@@ -39,14 +39,20 @@ func (s *UserService) CanSendMessage(msg *domain.Message) (*domain.UserActivity,
 	}
 
 	if activity.MessageCount == s.repo.GetMaxMessages() {
-		fmt.Printf("User %s reached daily limit\n", msg.Username)
+		s.logger.Infof("User %s reached daily limit", msg.Username)
 		s.repo.MarkLimitReached(msg.Author)
-		err := s.repo.UpdateUserPoints(msg.Author, 25)
+		err := s.repo.AddUserPoints(msg.Author, 25)
 		if err != nil {
-			s.logger.Infof("Error updating user points in database: %s\n", err)
+			s.logger.Errorf("Error updating user points in database: %s", err)
 			return nil, false
 		}
-		s.logger.Infof("User %s received 25 points\n", msg.Username)
+
+		err = s.repo.AddDayPoints(msg.Author, 25)
+		if err != nil {
+			s.logger.Errorf("Error updating user daily points in database: %s", err)
+			return nil, false
+		}
+		s.logger.Infof("User %s received 25 points", msg.Username)
 		return activity, true
 	}
 
@@ -58,4 +64,41 @@ func (s *UserService) IncrementUserMessageCount(activity *domain.UserActivity) {
 	activity.LastMessageTime = now
 	activity.NextMessageTime = now.Add(2 * time.Second)
 	activity.MessageCount = activity.MessageCount + 1
+}
+
+func (s *UserService) ReactionPoints(message *discordgo.Message) bool {
+	messageAuthor := message.Author.ID
+
+	err := s.repo.AddDayPoints(messageAuthor, 1)
+	if err != nil {
+		s.logger.Errorf("Error updating user daily points in database: %s", err)
+		return false
+	}
+
+	err = s.repo.AddUserPoints(messageAuthor, 1)
+	if err != nil {
+		s.logger.Errorf("Error updating user points in database: %s", err)
+		return false
+	}
+
+	return true
+}
+
+func (s *UserService) ReactionPointsRemoval(message *discordgo.Message) bool {
+
+	messageAuthor := message.Author.ID
+
+	err := s.repo.RemoveDayPoints(messageAuthor, 1)
+	if err != nil {
+		s.logger.Errorf("Error updating user daily points in database: %s", err)
+		return false
+	}
+
+	err = s.repo.RemoveUserPoints(messageAuthor, 1)
+	if err != nil {
+		s.logger.Errorf("Error updating user points in database: %s", err)
+		return false
+	}
+
+	return true
 }

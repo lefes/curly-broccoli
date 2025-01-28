@@ -13,6 +13,8 @@ type Users interface {
 	Reset() []*domain.UserActivity
 	CanSendMessage(msg *domain.Message) (*domain.UserActivity, bool)
 	IncrementUserMessageCount(activity *domain.UserActivity)
+	ReactionPoints(message *discordgo.Message) bool
+	ReactionPointsRemoval(message *discordgo.Message) bool
 }
 
 type Weather interface {

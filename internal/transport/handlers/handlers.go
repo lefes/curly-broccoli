@@ -5,23 +5,54 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/lefes/curly-broccoli/internal/domain"
+	"github.com/lefes/curly-broccoli/internal/logging"
 	"github.com/lefes/curly-broccoli/internal/repository"
 	"github.com/lefes/curly-broccoli/internal/services"
-	"github.com/lefes/curly-broccoli/internal/transport/discordapi"
 )
 
 type CommandHandlers struct {
 	services *services.Services
-	dSession *discordapi.DiscordSession
 	repo     *repository.Repositories // вот это нужно изи убрать
+	dSession *discordgo.Session
+	logger   *logging.Logger
 }
 
-func NewCommandHandlers(services *services.Services, dSession *discordapi.DiscordSession, r *repository.Repositories) *CommandHandlers {
+func NewCommandHandlers(services *services.Services, r *repository.Repositories, s *discordgo.Session, l *logging.Logger) *CommandHandlers {
 	return &CommandHandlers{
 		services: services,
-		dSession: dSession,
 		repo:     r,
+		dSession: s,
+		logger:   l,
 	}
+}
+
+func (cmdH *CommandHandlers) CommandsInit() []domain.SlashCommand {
+	minValue := float64(1)
+	maxValue := float64(7)
+	commands := []domain.SlashCommand{
+		{
+			Name:        "weather",
+			Description: "Get weather information for a city",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Name:        "city",
+					Description: "City to get weather information for",
+					Type:        discordgo.ApplicationCommandOptionString,
+					Required:    true,
+				},
+				{
+					Name:        "days",
+					Description: "Number of days for the forecast (default: 1)",
+					Type:        discordgo.ApplicationCommandOptionInteger,
+					Required:    false,
+					MinValue:    &minValue,
+					MaxValue:    maxValue,
+				},
+			},
+			Handler: cmdH.HandleWeatherCommand,
+		},
+	}
+	return commands
 }
 
 func (cmdH *CommandHandlers) HandleWeatherCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -57,11 +88,11 @@ func (cmdH *CommandHandlers) HandleWeatherCommand(s *discordgo.Session, i *disco
 		},
 	})
 	if err != nil {
-		fmt.Printf("Failed to send response: %v\n", err)
+		cmdH.logger.Errorf("Failed to send response: %v", err)
 	}
 }
 
-func (cmdH *CommandHandlers) HandlePoints(msg *domain.Message) bool {
+func (cmdH *CommandHandlers) HandleMessagePoints(msg *domain.Message) bool {
 	if msg.Raw.Author.Bot {
 		return false
 	}
@@ -75,8 +106,41 @@ func (cmdH *CommandHandlers) HandlePoints(msg *domain.Message) bool {
 
 	err := cmdH.repo.User.UpdateUserDailyMessages(msg.Author, activity.MessageCount)
 	if err != nil {
-		fmt.Printf("Error updating user daily messages in database: %s\n", err)
+		cmdH.logger.Errorf("Error updating user daily messages in database: %s", err)
 		return false
 	}
+	return true
+}
+
+func (cmdH *CommandHandlers) HandleReactionPointsAdd(r *discordgo.MessageReactionAdd) bool {
+
+	message, err := cmdH.dSession.ChannelMessage(r.ChannelID, r.MessageID)
+	if err != nil {
+		fmt.Printf("Failed to get message: %v\n", err)
+		return false
+	}
+
+	if !cmdH.services.Discord.IsValidReaction(message, r.UserID) {
+		return false
+	}
+
+	if !cmdH.services.User.ReactionPoints(message) {
+		return false
+	}
+
+	return true
+}
+
+func (cmdH *CommandHandlers) HandleReactionPointsRemove(r *discordgo.MessageReactionRemove) bool {
+
+	message, err := cmdH.dSession.ChannelMessage(r.ChannelID, r.MessageID)
+	if err != nil {
+		cmdH.logger.Errorf("Failed to get message: %v", err)
+		return false
+	}
+	if !cmdH.services.User.ReactionPointsRemoval(message) {
+		return false
+	}
+
 	return true
 }

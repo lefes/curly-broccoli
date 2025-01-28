@@ -81,10 +81,10 @@ func (ds *DiscordService) SyncUsers() error {
 }
 
 func (ds *DiscordService) IsValidReaction(message *discordgo.Message, reactorID string) bool {
-	/*  s := ds.session.GetSession() */
-	/* if reactorID == message.Author.ID || reactorID == s.State.User.ID { */
-	/* return false */
-	/* } */
+	s := ds.session.GetSession()
+	if reactorID == message.Author.ID || reactorID == s.State.User.ID {
+		return false
+	}
 
 	messageReactions := message.Reactions
 	totalReactions := 0
