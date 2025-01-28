@@ -6,31 +6,33 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/lefes/curly-broccoli/config"
+	"github.com/lefes/curly-broccoli/internal/logging"
 	"github.com/lefes/curly-broccoli/internal/transport/http/weatherapi"
 )
 
 type WeatherService struct {
 	config *config.WeatherService
 	Client *weatherapi.Client
+	logger *logging.Logger
 }
 
-func NewWeatherService(conf *config.WeatherService) *WeatherService {
+func NewWeatherService(conf *config.WeatherService, l *logging.Logger) *WeatherService {
 	c := weatherapi.NewClient(conf.ApiKey, conf.ApiUrl)
-	return &WeatherService{config: conf, Client: c}
+	return &WeatherService{config: conf, Client: c, logger: l}
 }
 
 func (w *WeatherService) GetWeather(city string, days int) (*discordgo.MessageEmbed, error) {
 	embed := &discordgo.MessageEmbed{}
 	if city == "" {
-		return nil, fmt.Errorf("city cannot be empty")
+		return nil, w.logger.Errorf("city cannot be empty")
 	}
 	if days < 1 || days > 7 {
-		return nil, fmt.Errorf("days must be between 1 and 7")
+		return nil, w.logger.Errorf("days must be between 1 and 7")
 	}
 	if days == 1 {
 		response, err := w.Client.CurrentWeather(city)
 		if err != nil {
-			return nil, fmt.Errorf("failed to fetch current weather: %w", err)
+			return nil, w.logger.Errorf("failed to fetch current weather: %w", err)
 		}
 		embed = &discordgo.MessageEmbed{
 			Title:       "🌤️ Current Weather",
@@ -64,7 +66,7 @@ func (w *WeatherService) GetWeather(city string, days int) (*discordgo.MessageEm
 	} else {
 		response, err := w.Client.ForecastWeather(city, days)
 		if err != nil {
-			return nil, fmt.Errorf("failed to fetch forecast weather: %w", err)
+			return nil, w.logger.Errorf("failed to fetch forecast weather: %w", err)
 		}
 		for _, day := range response.Days {
 			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{

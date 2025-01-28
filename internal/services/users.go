@@ -5,15 +5,17 @@ import (
 	"time"
 
 	"github.com/lefes/curly-broccoli/internal/domain"
+	"github.com/lefes/curly-broccoli/internal/logging"
 	"github.com/lefes/curly-broccoli/internal/repository"
 )
 
 type UserService struct {
-	repo repository.Users
+	repo   repository.Users
+	logger *logging.Logger
 }
 
-func NewUsersService(repo repository.Users) *UserService {
-	return &UserService{repo: repo}
+func NewUsersService(repo repository.Users, l *logging.Logger) *UserService {
+	return &UserService{repo: repo, logger: l}
 }
 
 func (s *UserService) Reset() []*domain.UserActivity {
@@ -41,10 +43,10 @@ func (s *UserService) CanSendMessage(msg *domain.Message) (*domain.UserActivity,
 		s.repo.MarkLimitReached(msg.Author)
 		err := s.repo.UpdateUserPoints(msg.Author, 25)
 		if err != nil {
-			fmt.Printf("Error updating user points in database: %s\n", err)
+			s.logger.Infof("Error updating user points in database: %s\n", err)
 			return nil, false
 		}
-		fmt.Printf("User %s received 25 points\n", msg.Username)
+		s.logger.Infof("User %s received 25 points\n", msg.Username)
 		return activity, true
 	}
 

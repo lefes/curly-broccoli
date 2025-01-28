@@ -1,19 +1,21 @@
 package cron
 
 import (
-	"fmt"
 	"time"
 
+	"github.com/lefes/curly-broccoli/internal/logging"
 	"github.com/lefes/curly-broccoli/internal/services"
 )
 
 type CronService struct {
 	services *services.Services
+	logger   *logging.Logger
 }
 
-func NewCronService(services *services.Services) *CronService {
+func NewCronService(services *services.Services, logger *logging.Logger) *CronService {
 	return &CronService{
 		services: services,
+		logger:   logger,
 	}
 }
 
@@ -25,9 +27,9 @@ func (c *CronService) Start() {
 func (c *CronService) runDailyTasks() {
 	for {
 		if err := c.services.Discord.SyncUsers(); err != nil {
-			fmt.Printf("Failed to sync users: %v\n", err)
+			c.logger.Infof("Failed to sync users: %v\n", err)
 		} else {
-			fmt.Println("Users sync has been completed")
+			c.logger.Info("Users sync has been completed")
 		}
 
 		now := time.Now()
@@ -36,12 +38,12 @@ func (c *CronService) runDailyTasks() {
 
 		time.Sleep(durationUntilNextDay)
 
-		fmt.Println("Running daily tasks...")
+		c.logger.Info("Running daily tasks...")
 
 		if err := c.services.User.Reset(); err != nil {
-			fmt.Printf("Failed to reset daily limits: %v\n", err)
+			c.logger.Infof("Failed to reset daily limits: %v\n", err)
 		} else {
-			fmt.Println("Daily limits reset successfully")
+			c.logger.Info("Daily limits reset successfully")
 		}
 	}
 }

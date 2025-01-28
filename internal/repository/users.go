@@ -2,21 +2,23 @@ package repository
 
 import (
 	"database/sql"
-	"fmt"
 	"time"
 
 	"github.com/lefes/curly-broccoli/internal/domain"
+	"github.com/lefes/curly-broccoli/internal/logging"
 )
 
 type UsersRepo struct {
 	db         *sql.DB
 	activities *domain.UserActivities
+	logger     *logging.Logger
 }
 
-func NewUsersRepo(db *sql.DB, a *domain.UserActivities) *UsersRepo {
+func NewUsersRepo(db *sql.DB, a *domain.UserActivities, l *logging.Logger) *UsersRepo {
 	return &UsersRepo{
 		db:         db,
 		activities: a,
+		logger:     l,
 	}
 }
 
@@ -67,7 +69,7 @@ func (r *UsersRepo) CreateUser(user *domain.User) error {
 
 	_, err := r.db.Exec(query, user.DiscordID, user.Username, user.RoleID, user.Points, user.Respect, user.DailyMessages)
 	if err != nil {
-		return fmt.Errorf("failed to create user with DiscordID %s: %w", user.DiscordID, err)
+		return r.logger.Errorf("failed to create user with DiscordID %s: %w", user.DiscordID, err)
 	}
 
 	return nil
@@ -78,7 +80,7 @@ func (r *UsersRepo) DeleteUser(userID string) error {
 
 	_, err := r.db.Exec(query, userID)
 	if err != nil {
-		return fmt.Errorf("failed to delete user with ID %s: %w", userID, err)
+		return r.logger.Errorf("failed to delete user with ID %s: %w", userID, err)
 	}
 
 	return nil
@@ -88,7 +90,7 @@ func (r *UsersRepo) UpdateUserPoints(discordID string, points int) error {
 	query := "UPDATE users SET points = points + ? WHERE discord_id = ?"
 	_, err := r.db.Exec(query, points, discordID)
 	if err != nil {
-		return fmt.Errorf("failed to update points for DiscordID %s: %w", discordID, err)
+		return r.logger.Errorf("failed to update points for DiscordID %s: %w", discordID, err)
 	}
 	return nil
 }
@@ -97,7 +99,7 @@ func (r *UsersRepo) UpdateUserDailyMessages(discordID string, dailyMessages int)
 	query := "UPDATE users SET daily_messages = ? WHERE discord_id = ?"
 	_, err := r.db.Exec(query, dailyMessages, discordID)
 	if err != nil {
-		return fmt.Errorf("failed to update daily messages for DiscordID %s: %w", discordID, err)
+		return r.logger.Errorf("failed to update daily messages for DiscordID %s: %w", discordID, err)
 	}
 	return nil
 }

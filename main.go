@@ -17,17 +17,20 @@ import (
 	"github.com/lefes/curly-broccoli/internal/transport/handlers"
 )
 
-func init() { flag.Parse() }
+var logger *logging.Logger
+
+func init() {
+	flag.Parse()
+	logger = logging.NewLogger()
+}
 
 func main() {
-	logging.InitLogger()
 	mainConfig := config.Init()
 	dSession := discordapi.DiscordSession{}
 	err := dSession.Start(&mainConfig.Discord)
 	if err != nil {
-		logging.GetLogger("bot").Fatalf("Failed to open discord session: %v", err)
+		logger.Fatalf("Failed to open discord session: %v", err)
 	}
-	logger := logging.GetLogger("bot")
 	logger.Info("Starting application")
 
 	db, err := storage.InitDB(mainConfig.Storage.DbPath)
@@ -41,17 +44,19 @@ func main() {
 		logger.Errorf("Failed to open discord session: %v", err)
 	}
 
-	repo := repository.NewRepository(db)
-	services := services.NewServices(repo, mainConfig, &dSession)
+	repo := repository.NewRepository(db, logger)
+	services := services.NewServices(repo, mainConfig, &dSession, logger)
 	if err != nil {
 		logger.Errorf("Failed to sync users: %v", err)
 	}
-	cronService := cron.NewCronService(services)
+
+	cronService := cron.NewCronService(services, logger)
 	cronService.Start()
 
 	handlers := handlers.NewCommandHandlers(services, repo)
 
 	commands := handlers.CommandsInit()
+
 	registeredCommands, err := dSession.RegisterCommands(commands, mainConfig.Discord.GuildID)
 	if err != nil {
 		logger.Fatalf("Failed to register commands: %v", err)
@@ -70,6 +75,10 @@ func main() {
 		handlers.HandleMessagePoints(&msg)
 	})
 
+	/*  dSession.WatchReactions(func(r *discordgo.MessageReactionAdd) { */
+	/* handlers.HandleReactionPoints(r) */
+	/* }) */
+
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
 	logger.Info("Press Ctrl+C to exit")
@@ -78,7 +87,7 @@ func main() {
 	// Logic after bot has been stopped with Ctrl+C
 	dSession.Stop()
 	if *RemoveCommands {
-		logger.Println("Removing commands...")
+		logger.Info("Removing commands...")
 		err := dSession.DeleteCommands(registeredCommands, mainConfig.Discord.GuildID)
 		if err != nil {
 			logger.Fatalf("Failed to remove commands: %v", err)

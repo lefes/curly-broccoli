@@ -1,22 +1,59 @@
 package logging
 
 import (
-	"github.com/sirupsen/logrus"
+	"fmt"
+
+	"go.uber.org/zap"
 )
 
-var Logger *logrus.Logger
-
-func InitLogger() {
-	Logger = logrus.New()
-
-	Logger.SetFormatter(&logrus.TextFormatter{
-		FullTimestamp: true,
-	})
-	Logger.SetLevel(logrus.InfoLevel)
+type Logger struct {
+	zapLogger *zap.SugaredLogger
 }
 
-func GetLogger(module string) *logrus.Entry {
-	return Logger.WithFields(logrus.Fields{
-		"module": module,
-	})
+func NewLogger() *Logger {
+	logger, _ := zap.NewProduction()
+	defer logger.Sync()
+	return &Logger{zapLogger: logger.Sugar()}
+}
+
+func (l *Logger) Info(args ...interface{}) {
+	l.zapLogger.Info(args...)
+}
+
+func (l *Logger) Error(args ...interface{}) {
+	l.zapLogger.Error(args...)
+}
+
+func (l *Logger) Debug(args ...interface{}) {
+	l.zapLogger.Debug(args...)
+}
+
+func (l *Logger) Warn(args ...interface{}) {
+	l.zapLogger.Warn(args...)
+}
+
+func (l *Logger) Fatal(args ...interface{}) {
+	l.zapLogger.Fatal(args...)
+}
+
+func (l *Logger) Infof(format string, args ...interface{}) {
+	l.zapLogger.Infof(format, args...)
+}
+
+func (l *Logger) Errorf(format string, args ...interface{}) error {
+	err := fmt.Errorf(format, args...)
+	l.zapLogger.Error(err.Error())
+	return err
+}
+
+func (l *Logger) Debugf(format string, args ...interface{}) {
+	l.zapLogger.Debugf(format, args...)
+}
+
+func (l *Logger) Warnf(format string, args ...interface{}) {
+	l.zapLogger.Warnf(format, args...)
+}
+
+func (l *Logger) Fatalf(format string, args ...interface{}) {
+	l.zapLogger.Fatalf(format, args...)
 }

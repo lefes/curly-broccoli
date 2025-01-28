@@ -4,6 +4,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/lefes/curly-broccoli/config"
 	"github.com/lefes/curly-broccoli/internal/domain"
+	"github.com/lefes/curly-broccoli/internal/logging"
 	"github.com/lefes/curly-broccoli/internal/repository"
 	"github.com/lefes/curly-broccoli/internal/transport/discordapi"
 )
@@ -29,10 +30,10 @@ type Services struct {
 	Discord Discord
 }
 
-func NewServices(repos *repository.Repositories, conf *config.Configs, s *discordapi.DiscordSession) *Services {
-	userService := NewUsersService(repos.User)
-	weatherService := NewWeatherService(&conf.Weather)
-	discordService := NewDiscordService(&conf.Discord, s, repos)
+func NewServices(repos *repository.Repositories, conf *config.Configs, s *discordapi.DiscordSession, l *logging.Logger) *Services {
+	userService := NewUsersService(repos.User, l)
+	weatherService := NewWeatherService(&conf.Weather, l)
+	discordService := NewDiscordService(&conf.Discord, s, repos, l)
 	return &Services{
 		User:    userService,
 		Weather: weatherService,

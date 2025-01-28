@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/lefes/curly-broccoli/internal/domain"
+	"github.com/lefes/curly-broccoli/internal/logging"
 )
 
 type Users interface {
@@ -23,9 +24,9 @@ type Repositories struct {
 	User Users
 }
 
-func NewRepository(db *sql.DB) *Repositories {
+func NewRepository(db *sql.DB, l *logging.Logger) *Repositories {
 	activities := domain.NewUserActivities(25)
 	return &Repositories{
-		User: NewUsersRepo(db, activities),
+		User: NewUsersRepo(db, activities, l),
 	}
 }
