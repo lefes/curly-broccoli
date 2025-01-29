@@ -1,5 +1,9 @@
 package config
 
+const (
+	DayPointsLimit = 40
+)
+
 type Configs struct {
 	Weather WeatherService
 	Discord DiscordService

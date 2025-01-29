@@ -15,6 +15,7 @@ type Users interface {
 	IncrementUserMessageCount(activity *domain.UserActivity)
 	ReactionPoints(message *discordgo.Message) bool
 	ReactionPointsRemoval(message *discordgo.Message) bool
+	WillReachPointLimit(userID string, points int) bool
 }
 
 type Weather interface {

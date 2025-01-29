@@ -21,6 +21,7 @@ type Users interface {
 	IsLimitReached(userdID string) bool
 	AddDayPoints(discordID string, points int) error
 	RemoveDayPoints(discordID string, points int) error
+	GetTodayPoints(discordID string) (int, error)
 }
 
 type Repositories struct {

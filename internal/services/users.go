@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/lefes/curly-broccoli/config"
 	"github.com/lefes/curly-broccoli/internal/domain"
 	"github.com/lefes/curly-broccoli/internal/logging"
 	"github.com/lefes/curly-broccoli/internal/repository"
@@ -20,6 +21,20 @@ func NewUsersService(repo repository.Users, l *logging.Logger) *UserService {
 
 func (s *UserService) Reset() []*domain.UserActivity {
 	return s.repo.Reset()
+}
+
+func (s *UserService) WillReachPointLimit(userID string, points int) bool {
+	userPoints, err := s.repo.GetTodayPoints(userID)
+	if err != nil {
+		s.logger.Errorf("Error getting user points from database: %s", err)
+	}
+
+	afterPoints := userPoints + points
+
+	if afterPoints > config.DayPointsLimit {
+		return false
+	}
+	return true
 }
 
 func (s *UserService) CanSendMessage(msg *domain.Message) (*domain.UserActivity, bool) {
@@ -41,6 +56,11 @@ func (s *UserService) CanSendMessage(msg *domain.Message) (*domain.UserActivity,
 	if activity.MessageCount == s.repo.GetMaxMessages() {
 		s.logger.Infof("User %s reached daily limit", msg.Username)
 		s.repo.MarkLimitReached(msg.Author)
+
+		if s.WillReachPointLimit(msg.Author, 25) {
+			return nil, false
+		}
+
 		err := s.repo.AddUserPoints(msg.Author, 25)
 		if err != nil {
 			s.logger.Errorf("Error updating user points in database: %s", err)
@@ -68,6 +88,10 @@ func (s *UserService) IncrementUserMessageCount(activity *domain.UserActivity) {
 
 func (s *UserService) ReactionPoints(message *discordgo.Message) bool {
 	messageAuthor := message.Author.ID
+
+	if s.WillReachPointLimit(messageAuthor, 1) {
+		return false
+	}
 
 	err := s.repo.AddDayPoints(messageAuthor, 1)
 	if err != nil {

@@ -86,6 +86,16 @@ func (r *UsersRepo) DeleteUser(userID string) error {
 	return nil
 }
 
+func (r *UsersRepo) GetTodayPoints(discordID string) (int, error) {
+	query := "SELECT points_today FROM users WHERE discord_id = ?"
+	var points int
+	err := r.db.QueryRow(query, discordID).Scan(&points)
+	if err != nil {
+		return 0, r.logger.Errorf("failed to get today points for DiscordID %s: %w", discordID, err)
+	}
+	return points, nil
+}
+
 func (r *UsersRepo) AddUserPoints(discordID string, points int) error {
 	query := "UPDATE users SET points = points + ? WHERE discord_id = ?"
 	_, err := r.db.Exec(query, points, discordID)
