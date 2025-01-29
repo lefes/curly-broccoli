@@ -109,11 +109,11 @@ func (r *UsersRepo) RemoveUserPoints(discordID string, points int) error {
 	query := `
 		UPDATE users
 		SET points = CASE
-			WHEN points - ? < 0 THEN 0
-			ELSE points - ?
+			WHEN points - $1 < 0 THEN 0
+			ELSE points - $1
 		END
-		WHERE discord_id = ?`
-	_, err := r.db.Exec(query, points, points, discordID)
+		WHERE discord_id = $2`
+	_, err := r.db.Exec(query, points, discordID)
 	if err != nil {
 		return r.logger.Errorf("failed to update points for DiscordID %s: %w", discordID, err)
 	}
@@ -200,6 +200,7 @@ func (r *UsersRepo) GetMaxMessages() int {
 	return r.activities.MaxMessages
 }
 
+// TODO: MERGE INTO ONE FUNC
 func (r *UsersRepo) IsLimitReached(userID string) bool {
 	r.activities.Mu.Lock()
 	defer r.activities.Mu.Unlock()

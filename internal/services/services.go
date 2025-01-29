@@ -27,19 +27,27 @@ type Discord interface {
 	IsValidReaction(message *discordgo.Message, reactorID string) bool
 }
 
+type Roles interface {
+	WillGetPromotion(userID string, respectToAdd int) (bool, *domain.Role)
+	GetUserRole(userID string) (*domain.Role, error)
+}
+
 type Services struct {
 	User    Users
 	Weather Weather
 	Discord Discord
+	Roles   Roles
 }
 
 func NewServices(repos *repository.Repositories, conf *config.Configs, s *discordapi.DiscordSession, l *logging.Logger) *Services {
 	userService := NewUsersService(repos.User, l)
 	weatherService := NewWeatherService(&conf.Weather, l)
 	discordService := NewDiscordService(&conf.Discord, s, repos, l)
+	rolesService := NewRoleService(repos.Roles, l)
 	return &Services{
 		User:    userService,
 		Weather: weatherService,
 		Discord: discordService,
+		Roles:   rolesService,
 	}
 }

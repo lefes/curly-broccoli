@@ -24,7 +24,6 @@ func init() {
 	logger = logging.NewLogger()
 }
 
-// TODO: Some way of checking day points limit
 func main() {
 	mainConfig := config.Init()
 	dSession := discordapi.DiscordSession{}

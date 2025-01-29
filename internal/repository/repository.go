@@ -24,13 +24,23 @@ type Users interface {
 	GetTodayPoints(discordID string) (int, error)
 }
 
+type Roles interface {
+	GetUserRespect(discordID string) (int, error)
+	AddUserRespect(discordID string, respect int) error
+	RemoveUserRespect(discordID string, respect int) error
+	UpdateUserRole(discordID string, roleID int) error
+	GetUserRole(discordID string) (int, error)
+}
+
 type Repositories struct {
-	User Users
+	User  Users
+	Roles Roles
 }
 
 func NewRepository(db *sql.DB, l *logging.Logger) *Repositories {
 	activities := domain.NewUserActivities(25)
 	return &Repositories{
-		User: NewUsersRepo(db, activities, l),
+		User:  NewUsersRepo(db, activities, l),
+		Roles: NewRolesRepo(db, l),
 	}
 }

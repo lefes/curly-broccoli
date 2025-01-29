@@ -31,6 +31,11 @@ func (cmdH *CommandHandlers) CommandsInit() []domain.SlashCommand {
 	maxValue := float64(7)
 	commands := []domain.SlashCommand{
 		{
+			Name:        "хтоя",
+			Description: "Get you current role",
+			Handler:     cmdH.HandleWhoAmICommand,
+		},
+		{
 			Name:        "weather",
 			Description: "Get weather information for a city",
 			Options: []*discordgo.ApplicationCommandOption{
@@ -51,8 +56,170 @@ func (cmdH *CommandHandlers) CommandsInit() []domain.SlashCommand {
 			},
 			Handler: cmdH.HandleWeatherCommand,
 		},
+		{
+			Name:        "respect",
+			Description: "Add or remove respect points from a user",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Name:        "add",
+					Description: "Add respect points to a user",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Options: []*discordgo.ApplicationCommandOption{
+						{
+							Name:        "user",
+							Description: "The user to give respect points to",
+							Type:        discordgo.ApplicationCommandOptionUser,
+							Required:    true,
+						},
+						{
+							Name:        "points",
+							Description: "The number of respect points to add",
+							Type:        discordgo.ApplicationCommandOptionInteger,
+							Required:    true,
+						},
+					},
+				},
+				{
+					Name:        "remove",
+					Description: "Remove respect points from a user",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Options: []*discordgo.ApplicationCommandOption{
+						{
+							Name:        "user",
+							Description: "The user to remove respect points from",
+							Type:        discordgo.ApplicationCommandOptionUser,
+							Required:    true,
+						},
+						{
+							Name:        "points",
+							Description: "The number of respect points to remove",
+							Type:        discordgo.ApplicationCommandOptionInteger,
+							Required:    true,
+						},
+					},
+				},
+			},
+			Handler: cmdH.HandleRespectCommand,
+		},
 	}
 	return commands
+}
+
+func (cmdH *CommandHandlers) HandleWhoAmICommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	userID := i.Member.User.ID
+	role, err := cmdH.services.Roles.GetUserRole(userID)
+	if err != nil {
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "Failed to get user role",
+			},
+		})
+	}
+
+	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: fmt.Sprintf("<@%s> has the role %s", userID, role.Name),
+		},
+	})
+}
+
+func (cmdH *CommandHandlers) HandleRespectCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	options := i.ApplicationCommandData().Options
+
+	if len(options) == 0 {
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "Invalid command usage. Please use /respect add or /respect remove.",
+			},
+		})
+		return
+	}
+
+	subcommand := options[0]
+	var userID string
+	var points int64
+
+	for _, opt := range subcommand.Options {
+		switch opt.Name {
+		case "user":
+			userID = opt.UserValue(nil).ID
+		case "points":
+			points = opt.IntValue()
+		}
+	}
+
+	if userID == "" || points == 0 {
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "Please specify a user and the number of respect points.",
+			},
+		})
+		return
+	}
+
+	// TODO: MERGE PROMOTION CHECKING WITH ADDING RESPECT It SHOULD BE INSIDE ADDUSERRESPECT
+	switch subcommand.Name {
+	case "add":
+		promoted, newRole := cmdH.services.Roles.WillGetPromotion(userID, int(points))
+		err := cmdH.repo.Roles.AddUserRespect(userID, int(points))
+		if err != nil {
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: fmt.Sprintf("Failed to add respect points: %v", err),
+				},
+			})
+			return
+		}
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: fmt.Sprintf("Added %d respect points to <@%s>", points, userID),
+			},
+		})
+		if promoted {
+			err = cmdH.repo.Roles.UpdateUserRole(userID, newRole.ID)
+			if err != nil {
+				cmdH.logger.Errorf("Failed to update user role: %v", err)
+			}
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: fmt.Sprintf("<@%s> has been promoted to %s!", userID, newRole.Name),
+				},
+			})
+		}
+
+	case "remove":
+		err := cmdH.repo.Roles.RemoveUserRespect(userID, int(points))
+		if err != nil {
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: fmt.Sprintf("Failed to remove respect points: %v", err),
+				},
+			})
+			return
+		}
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: fmt.Sprintf("Removed %d respect points from <@%s>", points, userID),
+			},
+		})
+
+	default:
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "Invalid subcommand. Use /respect add or /respect remove.",
+			},
+		})
+	}
 }
 
 func (cmdH *CommandHandlers) HandleWeatherCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
