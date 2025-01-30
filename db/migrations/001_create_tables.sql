@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
     points INTEGER DEFAULT 0,
     points_today INTEGER DEFAULT 0,
     respect INTEGER DEFAULT 0,
+    respect_today INTEGER DEFAULT 0,
     daily_messages INTEGER DEFAULT 0,
     last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

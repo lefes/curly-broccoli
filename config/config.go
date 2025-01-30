@@ -13,6 +13,9 @@ var (
 	GuildID       = "147313959819542528"
 	dbPath        string
 	logger        *logging.Logger
+	AdminUsers    = map[string]bool{
+		"1037008018287628328": true,
+	}
 )
 
 func Init() *Configs {

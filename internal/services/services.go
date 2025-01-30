@@ -16,6 +16,7 @@ type Users interface {
 	ReactionPoints(message *discordgo.Message) bool
 	ReactionPointsRemoval(message *discordgo.Message) bool
 	WillReachPointLimit(userID string, points int) bool
+	IsAdmin(userID string) bool
 }
 
 type Weather interface {
@@ -25,6 +26,7 @@ type Weather interface {
 type Discord interface {
 	SyncUsers() error
 	IsValidReaction(message *discordgo.Message, reactorID string) bool
+	RespectActiveUsers() error
 }
 
 type Roles interface {

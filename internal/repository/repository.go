@@ -22,6 +22,7 @@ type Users interface {
 	AddDayPoints(discordID string, points int) error
 	RemoveDayPoints(discordID string, points int) error
 	GetTodayPoints(discordID string) (int, error)
+	GetUsersWithDailyMessages() ([]string, error)
 }
 
 type Roles interface {
@@ -30,6 +31,8 @@ type Roles interface {
 	RemoveUserRespect(discordID string, respect int) error
 	UpdateUserRole(discordID string, roleID int) error
 	GetUserRole(discordID string) (int, error)
+	AddDayUserRespect(discordID string, respect int) error
+	RemoveDayUserRespect(discordID string, respect int) error
 }
 
 type Repositories struct {

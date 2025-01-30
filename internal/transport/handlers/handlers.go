@@ -31,6 +31,51 @@ func (cmdH *CommandHandlers) CommandsInit() []domain.SlashCommand {
 	maxValue := float64(7)
 	commands := []domain.SlashCommand{
 		{
+			Name:        "points",
+			Description: "Add or remove points",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Name:        "add",
+					Description: "Add points to a user",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Options: []*discordgo.ApplicationCommandOption{
+						{
+							Name:        "user",
+							Description: "The user to give points to",
+							Type:        discordgo.ApplicationCommandOptionUser,
+							Required:    true,
+						},
+						{
+							Name:        "points",
+							Description: "The number of points to add",
+							Type:        discordgo.ApplicationCommandOptionInteger,
+							Required:    true,
+						},
+					},
+				},
+				{
+					Name:        "remove",
+					Description: "Remove points from a user",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Options: []*discordgo.ApplicationCommandOption{
+						{
+							Name:        "user",
+							Description: "The user to remove points from",
+							Type:        discordgo.ApplicationCommandOptionUser,
+							Required:    true,
+						},
+						{
+							Name:        "points",
+							Description: "The number of points to remove",
+							Type:        discordgo.ApplicationCommandOptionInteger,
+							Required:    true,
+						},
+					},
+				},
+			},
+			Handler: cmdH.HandlePointsCommand,
+		},
+		{
 			Name:        "хтоя",
 			Description: "Get you current role",
 			Handler:     cmdH.HandleWhoAmICommand,
@@ -58,7 +103,7 @@ func (cmdH *CommandHandlers) CommandsInit() []domain.SlashCommand {
 		},
 		{
 			Name:        "respect",
-			Description: "Add or remove respect points from a user",
+			Description: "Add or remove respect points",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Name:        "add",
@@ -105,6 +150,101 @@ func (cmdH *CommandHandlers) CommandsInit() []domain.SlashCommand {
 	return commands
 }
 
+func (cmdH *CommandHandlers) HandlePointsCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	if !cmdH.services.User.IsAdmin(i.Member.User.ID) {
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "You don't have permission to use this command.",
+			},
+		})
+		return
+	}
+
+	options := i.ApplicationCommandData().Options
+
+	if len(options) == 0 {
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "Invalid command usage. Please use /points add or /points remove.",
+			},
+		})
+		return
+	}
+
+	subcommand := options[0]
+	var userID string
+	var points int64
+
+	for _, opt := range subcommand.Options {
+		switch opt.Name {
+		case "user":
+			userID = opt.UserValue(nil).ID
+		case "points":
+			points = opt.IntValue()
+		}
+	}
+
+	if userID == "" || points == 0 {
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "Please specify a user and the number of points.",
+			},
+		})
+		return
+	}
+
+	switch subcommand.Name {
+	case "add":
+		err := cmdH.repo.User.AddUserPoints(userID, int(points))
+		cmdH.repo.User.AddDayPoints(userID, int(points))
+		if err != nil {
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: fmt.Sprintf("Failed to add respect points: %v", err),
+				},
+			})
+			return
+		}
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: fmt.Sprintf("Added %d points to <@%s>", points, userID),
+			},
+		})
+
+	case "remove":
+		err := cmdH.repo.User.RemoveUserPoints(userID, int(points))
+		if err != nil {
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: fmt.Sprintf("Failed to remove points: %v", err),
+				},
+			})
+			return
+		}
+		cmdH.repo.User.RemoveDayPoints(userID, int(points))
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: fmt.Sprintf("Removed %d points from <@%s>", points, userID),
+			},
+		})
+
+	default:
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "Invalid subcommand. Use /points add or /points remove.",
+			},
+		})
+	}
+}
+
 func (cmdH *CommandHandlers) HandleWhoAmICommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	userID := i.Member.User.ID
 	role, err := cmdH.services.Roles.GetUserRole(userID)
@@ -126,6 +266,15 @@ func (cmdH *CommandHandlers) HandleWhoAmICommand(s *discordgo.Session, i *discor
 }
 
 func (cmdH *CommandHandlers) HandleRespectCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	if !cmdH.services.User.IsAdmin(i.Member.User.ID) {
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "You don't have permission to use this command.",
+			},
+		})
+		return
+	}
 	options := i.ApplicationCommandData().Options
 
 	if len(options) == 0 {
@@ -175,6 +324,10 @@ func (cmdH *CommandHandlers) HandleRespectCommand(s *discordgo.Session, i *disco
 			})
 			return
 		}
+		err = cmdH.repo.Roles.AddDayUserRespect(userID, int(points))
+		if err != nil {
+			cmdH.logger.Errorf("Failed to add daily respect points: %v", err)
+		}
 		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
@@ -204,6 +357,10 @@ func (cmdH *CommandHandlers) HandleRespectCommand(s *discordgo.Session, i *disco
 				},
 			})
 			return
+		}
+		err = cmdH.repo.Roles.RemoveDayUserRespect(userID, int(points))
+		if err != nil {
+			cmdH.logger.Errorf("Failed to remove daily respect points: %v", err)
 		}
 		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,

@@ -65,6 +65,21 @@ func (r *RolesRepo) AddUserRespect(discordID string, respect int) error {
 	return nil
 }
 
+func (r *RolesRepo) AddDayUserRespect(discordID string, respect int) error {
+	query := `
+	UPDATE users
+	SET respect_today = respect_today + $1
+	WHERE discord_id = $2
+	`
+
+	_, err := r.db.Exec(query, respect, discordID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (r *RolesRepo) RemoveUserRespect(discordID string, respect int) error {
 	query := `
 	UPDATE users
@@ -80,6 +95,22 @@ func (r *RolesRepo) RemoveUserRespect(discordID string, respect int) error {
 		return err
 	}
 
+	return nil
+}
+
+func (r *RolesRepo) RemoveDayUserRespect(discordID string, respect int) error {
+	query := `
+	UPDATE users
+	SET respect = CASE
+	    WHEN respect_today - $1 < 0 THEN 0
+	    ELSE respect_today - $1
+	END
+	WHERE discord_id = $2
+	`
+	_, err := r.db.Exec(query, respect, discordID)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

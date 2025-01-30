@@ -99,3 +99,29 @@ func (ds *DiscordService) IsValidReaction(message *discordgo.Message, reactorID 
 
 	return true
 }
+
+func (ds *DiscordService) RespectActiveUsers() error {
+	activeUsers := make([]string, 0)
+	users, err := ds.repo.User.GetUsersWithDailyMessages()
+	if err != nil {
+		return ds.logger.Errorf("Error getting users with daily messages from database: %w", err)
+	}
+	for _, user := range users {
+		userRespect, err := ds.repo.Roles.GetUserRespect(user)
+		if err != nil {
+			return ds.logger.Errorf("Error getting user respect from database: %w", err)
+		}
+		if userRespect < 5 {
+			activeUsers = append(activeUsers, user)
+		}
+	}
+
+	for _, user := range activeUsers {
+		err := ds.repo.Roles.AddUserRespect(user, 1)
+		if err != nil {
+			return ds.logger.Errorf("Error adding respect to user: %w", err)
+		}
+	}
+
+	return nil
+}

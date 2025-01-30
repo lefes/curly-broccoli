@@ -120,6 +120,31 @@ func (r *UsersRepo) RemoveUserPoints(discordID string, points int) error {
 	return nil
 }
 
+func (r *UsersRepo) GetUsersWithDailyMessages() ([]string, error) {
+	query := "SELECT discord_id FROM users WHERE daily_messages > 0"
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, r.logger.Errorf("failed to get users with daily messages: %w", err)
+	}
+	defer rows.Close()
+
+	var users []string
+	for rows.Next() {
+		var discordID string
+		err := rows.Scan(&discordID)
+		if err != nil {
+			return nil, r.logger.Errorf("failed to scan discord_id: %w", err)
+		}
+		users = append(users, discordID)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, r.logger.Errorf("failed to iterate over rows: %w", err)
+	}
+
+	return users, nil
+}
+
 func (r *UsersRepo) UpdateUserDailyMessages(discordID string, dailyMessages int) error {
 	query := "UPDATE users SET daily_messages = ? WHERE discord_id = ?"
 	_, err := r.db.Exec(query, dailyMessages, discordID)

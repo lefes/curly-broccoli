@@ -45,6 +45,13 @@ func (c *CronService) runDailyTasks() {
 		} else {
 			c.logger.Info("Daily limits reset successfully")
 		}
+
+		if err := c.services.Discord.RespectActiveUsers(); err != nil {
+			c.logger.Infof("Failed to respect active users: %v\n", err)
+		} else {
+			c.logger.Info("Added daily user respect to active users")
+		}
+
 	}
 }
 

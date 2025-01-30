@@ -19,6 +19,11 @@ func NewUsersService(repo repository.Users, l *logging.Logger) *UserService {
 	return &UserService{repo: repo, logger: l}
 }
 
+func (s *UserService) IsAdmin(userID string) bool {
+	_, isAdmin := config.AdminUsers[userID]
+	return isAdmin
+}
+
 func (s *UserService) Reset() []*domain.UserActivity {
 	return s.repo.Reset()
 }
