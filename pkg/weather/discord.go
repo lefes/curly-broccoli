@@ -144,7 +144,6 @@ func sendCurrentWeatherMessage(session *discordgo.Session, message *discordgo.Me
 	return nil
 }
 
-
 func resolveShortCut(input string) string {
 	normalizedInput := strings.ToLower(input)
 

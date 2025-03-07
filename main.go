@@ -14,115 +14,7 @@ import (
 	"github.com/lefes/curly-broccoli/jokes"
 	"github.com/lefes/curly-broccoli/pkg/logging"
 	"github.com/lefes/curly-broccoli/pkg/weather"
-	"github.com/lefes/curly-broccoli/quotes"
 )
-
-func handleRaceCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if raceInProgress {
-		s.ChannelMessageSend(m.ChannelID, "Гонка уже идет! Дождитесь окончания текущей гонки.")
-		return
-	}
-
-	raceInProgress = true
-	s.ChannelMessageSend(m.ChannelID, "Заезд начинается! Напишите !го, чтобы присоединиться. У вас есть 1 минута.")
-
-	time.AfterFunc(1*time.Minute, func() {
-		startRace(s, m)
-	})
-}
-
-func handleJoinRaceCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if !raceInProgress {
-		s.ChannelMessageSend(m.ChannelID, "Сейчас нет активной гонки. Напишите !гонка, чтобы начать новую.")
-		return
-	}
-
-	raceMutex.Lock()
-	defer raceMutex.Unlock()
-
-	if _, exists := raceParticipants[m.Author.ID]; exists {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<@%s>, ты уже участвуешь в заезде!", m.Author.ID))
-		return
-	}
-
-	emoji := raceEmojis[rand.IntN(len(raceEmojis))]
-	raceParticipants[m.Author.ID] = emoji
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<@%s> присоединился к гонке как %s!", m.Author.ID, emoji))
-}
-
-func startRace(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if len(raceParticipants) < 2 {
-		s.ChannelMessageSend(m.ChannelID, "Недостаточно участников для начала гонки. Гонка отменена.")
-		raceInProgress = false
-		raceParticipants = make(map[string]string)
-		return
-	}
-
-	s.ChannelMessageSend(m.ChannelID, "Гонка начнется через 30 секунд! 🏁")
-	time.Sleep(30 * time.Second)
-
-	raceTrack := make(map[string]int)
-	trackLength := 20
-
-	for id := range raceParticipants {
-		raceTrack[id] = 0
-	}
-
-	raceMessageContent := buildRaceMessage(raceTrack, raceParticipants, trackLength)
-	raceMessage, err := s.ChannelMessageSend(m.ChannelID, raceMessageContent)
-	if err != nil {
-		fmt.Println("error sending race message:", err)
-		return
-	}
-
-	winner := ""
-	for winner == "" {
-		time.Sleep(1 * time.Second)
-
-		for id := range raceParticipants {
-			raceTrack[id] += rand.IntN(3)
-			if raceTrack[id] >= trackLength {
-				raceTrack[id] = trackLength
-				winner = id
-				break
-			}
-		}
-
-		updatedRaceMessageContent := buildRaceMessage(raceTrack, raceParticipants, trackLength)
-		_, err := s.ChannelMessageEdit(m.ChannelID, raceMessage.ID, updatedRaceMessageContent)
-		if err != nil {
-			fmt.Println("error editing race message:", err)
-			return
-		}
-	}
-
-	winnerMessage := fmt.Sprintf("🎉 Победитель гонки: <@%s> %s! Поздравляем! 🎉", winner, raceParticipants[winner])
-	_, err = s.ChannelMessageSend(m.ChannelID, winnerMessage)
-	if err != nil {
-		fmt.Println("error sending winner message:", err)
-	}
-
-	raceInProgress = false
-	raceParticipants = make(map[string]string)
-}
-
-func buildRaceMessage(raceTrack map[string]int, raceParticipants map[string]string, trackLength int) string {
-	raceMessage := "🏁 Гонка в процессе: 🏁\n\n"
-	longestName := 0
-
-	for name := range raceParticipants {
-		if len(name) >= longestName {
-			longestName = len(name)
-		}
-	}
-
-	for id, emoji := range raceParticipants {
-		track := strings.Repeat("-", raceTrack[id]) + emoji + strings.Repeat("-", trackLength-raceTrack[id])
-		raceMessage += fmt.Sprintf("<@%s>: ", id) + strings.Repeat(" ", longestName-len(id)) + fmt.Sprintf("%s\n", track)
-	}
-
-	return raceMessage
-}
 
 func handleBeerCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	args := strings.Split(m.Content, " ")
@@ -465,8 +357,6 @@ func main() {
 
 	weatherClient := weather.NewClient(weatherApiKey, weatherApiBaseUrl)
 
-	quote := quotes.New()
-
 	session.Identify.Intents = discordgo.IntentsGuildMessages
 
 	session.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -496,11 +386,7 @@ func main() {
 			}
 		}
 
-		if m.Content == "!гонка" {
-			handleRaceCommand(s, m)
-		} else if m.Content == "!го" {
-			handleJoinRaceCommand(s, m)
-		} else if strings.HasPrefix(m.Content, "!пиво") {
+		if strings.HasPrefix(m.Content, "!пиво") {
 			handleBeerCommand(s, m)
 		}
 
@@ -703,20 +589,6 @@ func main() {
 
 		if m.Content == "!голосование" {
 			go poll(s, m)
-		}
-
-		if strings.Contains(strings.ToLower(m.Content), "!quote") {
-			_, err := s.ChannelMessageSendReply(m.ChannelID, quote.GetRandom(), m.Reference())
-			if err != nil {
-				mainLogger.Error("error sending message,", err)
-			}
-		}
-
-		if strings.Contains(strings.ToLower(m.Content), "!academia") {
-			_, err := s.ChannelMessageSendReply(m.ChannelID, quote.GetRandomAcademia(), m.Reference())
-			if err != nil {
-				mainLogger.Error("error sending message,", err)
-			}
 		}
 
 		if strings.HasPrefix(strings.ToLower(m.Content), "!медведь") {

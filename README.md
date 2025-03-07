@@ -1,23 +1,99 @@
-# Discord Bot for Friends' Server
+# Curly Broccoli Discord Bot
 
-## About
+A fun and interactive Discord bot written in Go that responds to various triggers, provides weather information, and entertains server members with games and random responses.
 
-This is a Discord bot that has been specifically designed for use on my friends server. The bot is designed to respond to certain commands with humorous responses that are only understood by people on that server.
+## Features
 
-## How to Use
+### Basic Interactions
+- Responds to greetings and farewells
+- Reacts to morning/evening messages with appropriate emojis
+- Adds reactions to messages about specific topics (Legion, Coven, games, etc.)
+- Responds to various trigger words with custom messages
 
-To use the bot, simply invite it to your server and then type one of the commands listed below into the chat. The bot will then respond with a humorous message that is specific to your server.
+### Commands
+- `!пиво <число>` - Beer drinking challenge with success/failure outcomes
+- `!голосование` - Creates a poll to determine "who is a dick today"
+- `!пенис` - Generates a random penis size visualization
+- `!бубс` - Generates a random breast size visualization
+- `!медведь` - Calculates your chance to defeat a bear
+- `!ролл` or `!d20` - Rolls a D20 die
+- `!писька` - Rates a user on their "писька" level
+- `!письки` - Rates multiple users' "писька" levels
+- `!гей` - Calculates and shows a user's gay percentage
+- `!анекдот` - Fetches a random joke
+- `!шар` - Magic 8-ball style responses to questions
 
-## Commands
+### Weather System
+- `!weather <city>` - Shows current weather for a location
+- `!weather <city> <days>` - Shows weather forecast for specified number of days
+- `!погода <город>` - Russian version of the weather command
+- Supports city shortcuts for common Russian cities
 
-The following commands are available for use with this bot:
+## Installation
 
-- `!голосование` - The bot will start a vote on 3 random members of your server.
-- `!quote` - The bot will give a random inspirational quote that is specific to your server.
-- `!academia` - The bot will give a random academic quote that is specific to your server.
-- `!писька` - The bot will give a percentage of how much of a pussy you are.
-- `!шар` - The bot will give a random answer to a yes/no question.
+### Prerequisites
+- Go 1.18 or higher
+- Discord Bot Token
+- Visual Crossing Weather API Key
 
-## Contributions
+### Setup
+1. Clone the repository:
+   ```
+   git clone https://github.com/lefes/curly-broccoli.git
+   cd curly-broccoli
+   ```
 
-Contributions to this project are welcome. If you encounter any issues or have suggestions for new features, please open an issue or submit a pull request.
+2. Create a `.env` file in the root directory with your Discord token and weather API key:
+   ```
+   TOKEN=your_discord_bot_token
+   WEATHER_API_KEY=your_weather_api_key
+   ```
+
+3. Build the application:
+   ```
+   go build
+   ```
+
+4. Run the bot:
+   ```
+   ./curly-broccoli
+   ```
+
+## Project Structure
+
+```
+├── consts.go           # Constants and message arrays
+├── jokes
+│   └── jokes.go        # Joke fetching functionality
+├── main.go             # Main bot logic and command handlers
+├── pkg
+│   ├── logging         # Logging utilities
+│   └── weather         # Weather API integration
+```
+
+## Weather API
+
+The weather functionality uses the Visual Crossing Weather API. You can get a free API key by signing up at [Visual Crossing](https://www.visualcrossing.com/).
+
+## Customization
+
+- Add or modify responses in the constant arrays in `consts.go`
+- Add new command handlers in `main.go`
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgements
+
+- [DiscordGo](https://github.com/bwmarrin/discordgo) for Discord API integration
+- [Visual Crossing](https://www.visualcrossing.com/) for weather data
+- [goquery](https://github.com/PuerkitoBio/goquery) for HTML parsing
