@@ -43,32 +43,51 @@ A fun and interactive Discord bot written in Go that responds to various trigger
    cd curly-broccoli
    ```
 
-2. Create a `.env` file in the root directory with your Discord token and weather API key:
+2. Create a `.env` file in the root directory with your Discord token and weather API key (see `.env.example`):
    ```
    TOKEN=your_discord_bot_token
    WEATHER_API_KEY=your_weather_api_key
+   # optional
+   LOG_LEVEL=info
+   WEATHER_BASE_URL=https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline
    ```
 
 3. Build the application:
    ```
-   go build
+   make build
    ```
 
 4. Run the bot:
    ```
-   ./curly-broccoli
+   make run
    ```
 
 ## Project Structure
 
 ```
-├── consts.go           # Constants and message arrays
-├── jokes
-│   └── jokes.go        # Joke fetching functionality
-├── main.go             # Main bot logic and command handlers
+├── cmd
+│   └── curly-broccoli      # Application entrypoint
+│       └── main.go
+├── internal
+│   ├── bot                  # Router, commands and helpers
+│   │   ├── router.go
+│   │   ├── commands.go
+│   │   └── helpers.go
+│   ├── config               # Config loader from env/.env
+│   │   └── config.go
+│   ├── logging              # Logger initialization
+│   │   └── logging.go
+│   └── texts                # Triggers, quotes and utilities
+│       ├── texts.go
+│       └── quotes.go
 ├── pkg
-│   ├── logging         # Logging utilities
-│   └── weather         # Weather API integration
+│   ├── jokes                 # Joke fetching functionality
+│   │   └── jokes.go
+│   └── weather              # Weather API integration
+│       ├── client.go
+│       ├── discord.go
+│       ├── interfaces.go
+│       └── responses.go
 ```
 
 ## Weather API
@@ -77,8 +96,8 @@ The weather functionality uses the Visual Crossing Weather API. You can get a fr
 
 ## Customization
 
-- Add or modify responses in the constant arrays in `consts.go`
-- Add new command handlers in `main.go`
+- Add or modify triggers and messages in `internal/texts`
+- Add new command handlers in `internal/bot`
 
 ## Contributing
 

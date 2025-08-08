@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/lefes/curly-broccoli/pkg/logging"
-	"github.com/sirupsen/logrus"
 )
 
 var cityShortcuts = map[string]string{
@@ -18,13 +16,6 @@ var cityShortcuts = map[string]string{
 	"нск": "Novosibirsk",
 	"крд": "Krasnodar",
 	"соч": "Sochi",
-}
-
-var logger *logrus.Entry
-
-func InitWeatherLogger() {
-	logger = logging.GetLogger("weather")
-
 }
 
 func sendHelpMessage(session *discordgo.Session, message *discordgo.MessageCreate) error {
@@ -57,11 +48,7 @@ func sendHelpMessage(session *discordgo.Session, message *discordgo.MessageCreat
 	}
 
 	_, err := session.ChannelMessageSendEmbed(message.ChannelID, embed)
-	if err != nil {
-		logger.Error("Error sending help message:", err)
-		return err
-	}
-	return nil
+	return err
 }
 
 func sendForecastWeatherMessage(session *discordgo.Session, message *discordgo.MessageCreate, weather *WeatherResponse) error {
@@ -89,11 +76,7 @@ func sendForecastWeatherMessage(session *discordgo.Session, message *discordgo.M
 	}
 
 	_, err := session.ChannelMessageSendEmbed(message.ChannelID, embed)
-	if err != nil {
-		logger.Error("Error sending forecast weather message:", err)
-		return err
-	}
-	return nil
+	return err
 }
 
 func sendCurrentWeatherMessage(session *discordgo.Session, message *discordgo.MessageCreate, weather *WeatherResponse) error {
@@ -137,11 +120,7 @@ func sendCurrentWeatherMessage(session *discordgo.Session, message *discordgo.Me
 	}
 
 	_, err := session.ChannelMessageSendEmbed(message.ChannelID, embed)
-	if err != nil {
-		logger.Error("Error sending current weather message:", err)
-		return err
-	}
-	return nil
+	return err
 }
 
 func resolveShortCut(input string) string {

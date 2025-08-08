@@ -1,12 +1,12 @@
 FROM golang:1.23 as build
 
-WORKDIR /go/src/app
+WORKDIR /src
 COPY . .
 
 RUN go mod download
 RUN go vet -v
 
-RUN CGO_ENABLED=0 go build -o /go/bin/app
+RUN CGO_ENABLED=0 go build -o /go/bin/app ./cmd/curly-broccoli
 
 FROM gcr.io/distroless/static-debian11
 
