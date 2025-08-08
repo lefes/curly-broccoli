@@ -1,10 +1,10 @@
-FROM golang:1.23 as build
+FROM golang:1.24 AS build
 
 WORKDIR /src
 COPY . .
 
 RUN go mod download
-RUN go vet -v
+RUN go vet ./...
 
 RUN CGO_ENABLED=0 go build -o /go/bin/app ./cmd/curly-broccoli
 
